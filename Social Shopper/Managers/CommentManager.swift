@@ -32,7 +32,7 @@ class CommentManager {
 
         // Query for comments for the specific product, ordered by timestamp
         listener = db.collection("products").document(productID).collection("comments")
-            .order(by: "timestamp", descending: false) // Order by timestamp
+//            .order(by: "timestamp", descending: false) // Order by timestamp
             .addSnapshotListener { (querySnapshot, error) in
                 self.isLoading = false
                 if let error = error {

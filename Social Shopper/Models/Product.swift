@@ -7,7 +7,7 @@
 import Foundation
 import FirebaseFirestore
 
-struct Product: Identifiable, Codable, Equatable {
+struct Product: Identifiable, Codable, Equatable, Hashable {
     @DocumentID var id: String?
     var name: String
     var description: String
@@ -21,34 +21,8 @@ struct Product: Identifiable, Codable, Equatable {
     }
 
     // Equatable conformance (for more efficient comparison) - useful for SwiftUI
-      static func == (lhs: Product, rhs: Product) -> Bool {
-          return lhs.id == rhs.id
-      }
-
-    //  Added CodingKeys for clarity and maintainability, especially if your property
-     //  names differ from your Firestore field names.
-    enum CodingKeys: String, CodingKey {
-        case id
-        case name
-        case description
-        case price
-        case imageUrl
-        case category
-    }
-
-     // Custom initializer to handle decoding
-     init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        // Firestore may not always include the 'id' in the payload when retrieving
-        // documents.  We handle this more robustly.  If the ID exists, decode it;
-        // otherwise, leave it nil.  The @DocumentID property wrapper should then
-        // populate the ID when the document is retrieved.
-        id = try? container.decodeIfPresent(String.self, forKey: .id)
-        name = try container.decode(String.self, forKey: .name)
-        description = try container.decode(String.self, forKey: .description)
-        price = try container.decode(Double.self, forKey: .price)
-        imageUrl = try container.decode(String.self, forKey: .imageUrl)
-        category = try container.decode(String.self, forKey: .category)
+    static func == (lhs: Product, rhs: Product) -> Bool {
+        return lhs.id == rhs.id
     }
 
     // Added an empty initializer
@@ -59,5 +33,16 @@ struct Product: Identifiable, Codable, Equatable {
         self.price = price
         self.imageUrl = imageUrl
         self.category = category
+    }
+
+    static var sample: Product {
+        .init(
+            id: "123",
+            name: "Apple iPhone 13",
+            description: "6.1\" Super Retina XDR display. 5G Superfast downloads, high quality streaming",
+            price: 297.00,
+            imageUrl: "https://m.media-amazon.com/images/I/71MKNCEgE6L._AC_SL1500_.jpg",
+            category: "Electronics"
+        )
     }
 }

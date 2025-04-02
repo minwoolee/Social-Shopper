@@ -41,7 +41,12 @@ class ProductManager {
     // Add a new product to Firestore
     func addProduct(product: Product) {
         do {
-            _ = try db.collection("products").addDocument(from: product)
+            let ref = try db.collection("products").addDocument(from: product)
+            print("document added with \(ref.documentID)")
+            Task {
+                let pr = try await ref.getDocument(as: Product.self)
+                print(pr)
+            }
         } catch {
             self.error = error
             print("Error adding product: \(error.localizedDescription)")

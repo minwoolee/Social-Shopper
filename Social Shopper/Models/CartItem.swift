@@ -10,4 +10,11 @@ struct CartItem: Identifiable, Codable {
     var id = UUID()
     var product: Product
     var quantity: Int
+
+    static var sample: CartItem {
+        .init(
+            product: .sample,
+            quantity: 1
+        )
+    }
 }

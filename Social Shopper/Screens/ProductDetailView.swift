@@ -5,10 +5,12 @@
 //  Created by Min Woo Lee on 4/1/25.
 //
 import SwiftUI
+import CachedAsyncImage
 
 struct ProductDetailView: View {
     var product: Product
     @Environment(CartManager.self) var cartManager
+    @Environment(ProductManager.self) var productManager
     @State private var quantity = 1
     @State private var commentText = ""
     @State var commentManager: CommentManager // Use ObservedObject
@@ -17,7 +19,7 @@ struct ProductDetailView: View {
     @State private var paymentSuccess = false
 
     // Use the product ID to initialize the comment manager.  This is crucial.
-    init(product: Product, productManager: ProductManager) {
+    init(product: Product) {
         self.product = product
         commentManager = CommentManager(productID: product.id ?? "")
     }
@@ -25,8 +27,7 @@ struct ProductDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                // Product Image
-                AsyncImage(url: URL(string: product.imageUrl)) { phase in
+                CachedAsyncImage(url: URL(string: product.imageUrl)) { phase in
                     switch phase {
                     case .empty:
                         ProgressView() // Show loading indicator
@@ -154,28 +155,6 @@ struct ProductDetailView: View {
     }
 }
 
-struct CommentRow: View {
-    var comment: Comment
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                Text(comment.userDisplayName) // Show user's display name
-                    .font(.headline)
-                    .fontWeight(.semibold)
-                Spacer()
-                Text(comment.timestamp.formatted()) // Show formatted date
-                    .font(.caption)
-                    .foregroundColor(.gray)
-            }
-            Text(comment.text)
-                .font(.body)
-                .foregroundColor(.primary)
-        }
-        .padding(.vertical, 4)
-    }
-}
-
 struct ActivityViewController: UIViewControllerRepresentable {
     var activityItems: [Any]
     var applicationActivities: [UIActivity]? = nil
@@ -188,4 +167,10 @@ struct ActivityViewController: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
         // Update the view controller if needed.  In this case, nothing to update.
     }
+}
+
+#Preview {
+    ProductDetailView(product: .sample)
+        .environment(CartManager())
+        .environment(ProductManager())
 }

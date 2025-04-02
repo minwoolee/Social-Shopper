@@ -12,6 +12,7 @@
 		28E071652D9C8484002F99B5 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 28E071642D9C8484002F99B5 /* FirebaseFirestore */; };
 		28E071672D9C8484002F99B5 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 28E071662D9C8484002F99B5 /* FirebaseMessaging */; };
 		28E071692D9C8484002F99B5 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 28E071682D9C8484002F99B5 /* FirebaseStorage */; };
+		28E071992D9CA75C002F99B5 /* CachedAsyncImage in Frameworks */ = {isa = PBXBuildFile; productRef = 28E071982D9CA75C002F99B5 /* CachedAsyncImage */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -63,6 +64,7 @@
 				28E071672D9C8484002F99B5 /* FirebaseMessaging in Frameworks */,
 				28E071632D9C8484002F99B5 /* FirebaseCore in Frameworks */,
 				28E071612D9C8484002F99B5 /* FirebaseAnalytics in Frameworks */,
+				28E071992D9CA75C002F99B5 /* CachedAsyncImage in Frameworks */,
 				28E071692D9C8484002F99B5 /* FirebaseStorage in Frameworks */,
 				28E071652D9C8484002F99B5 /* FirebaseFirestore in Frameworks */,
 			);
@@ -130,6 +132,7 @@
 				28E071642D9C8484002F99B5 /* FirebaseFirestore */,
 				28E071662D9C8484002F99B5 /* FirebaseMessaging */,
 				28E071682D9C8484002F99B5 /* FirebaseStorage */,
+				28E071982D9CA75C002F99B5 /* CachedAsyncImage */,
 			);
 			productName = "Social Shopper";
 			productReference = 28E071332D9C81C7002F99B5 /* Social Shopper.app */;
@@ -215,6 +218,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				28E0715F2D9C8484002F99B5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				28E071972D9CA75C002F99B5 /* XCRemoteSwiftPackageReference "swiftui-cached-async-image" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 28E071342D9C81C7002F99B5 /* Products */;
@@ -585,6 +589,14 @@
 				minimumVersion = 11.11.0;
 			};
 		};
+		28E071972D9CA75C002F99B5 /* XCRemoteSwiftPackageReference "swiftui-cached-async-image" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/lorenzofiamingo/swiftui-cached-async-image";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.1.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -612,6 +624,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 28E0715F2D9C8484002F99B5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseStorage;
+		};
+		28E071982D9CA75C002F99B5 /* CachedAsyncImage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 28E071972D9CA75C002F99B5 /* XCRemoteSwiftPackageReference "swiftui-cached-async-image" */;
+			productName = CachedAsyncImage;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

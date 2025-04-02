@@ -7,7 +7,7 @@
 import SwiftUI
 
 struct ProductListView: View {
-    @State var productManager: ProductManager
+    @Environment(ProductManager.self) var productManager
     @State private var searchText = ""
     @State private var selectedCategory: String? = nil // Added state for selected category
 
@@ -15,7 +15,7 @@ struct ProductListView: View {
     let categories = ["All", "Electronics", "Clothing", "Home Goods", "Books"] // Added more categories
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack {
                 // Search Bar
                 TextField("Search products", text: $searchText)
@@ -55,7 +55,7 @@ struct ProductListView: View {
                 } else {
                     List {
                         ForEach(filteredProducts) { product in
-                            NavigationLink(destination: ProductDetailView(product: product, productManager: productManager)) {
+                            NavigationLink(value: product) {
                                 ProductRow(product: product)
                             }
                         }
@@ -64,8 +64,11 @@ struct ProductListView: View {
                 }
             }
             .navigationTitle("Products")
-            .onAppear {
+            .task {
                 productManager.loadProducts() // Load products when the view appears
+            }
+            .navigationDestination(for: Product.self) { product in
+                ProductDetailView(product: product)
             }
         }
     }
@@ -87,44 +90,7 @@ struct ProductListView: View {
     }
 }
 
-// Product Row (for the list)
-struct ProductRow: View {
-    var product: Product
-
-    var body: some View {
-        HStack {
-            // Use AsyncImage to load images from URLs
-            AsyncImage(url: URL(string: product.imageUrl)) { phase in
-                switch phase {
-                case .empty:
-                    Image(systemName: "photo") // Placeholder
-                        .frame(width: 50, height: 50)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 50, height: 50)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                case .failure:
-                    Image(systemName: "photo") // Error indicator
-                        .frame(width: 50, height: 50)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                @unknown default:
-                    EmptyView()
-                }
-            }
-
-            VStack(alignment: .leading) {
-                Text(product.name)
-                    .font(.headline)
-                Text(product.description)
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-                Text(product.formattedPrice)
-                    .font(.callout)
-                    .fontWeight(.bold)
-            }
-        }
-    }
+#Preview {
+    ProductListView()
+        .environment(ProductManager())
 }

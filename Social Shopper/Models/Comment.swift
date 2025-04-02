@@ -14,15 +14,6 @@ struct Comment: Identifiable, Codable {
     var timestamp: Date
     var userDisplayName: String // Added display name
 
-    // Added CodingKeys for clarity
-    enum CodingKeys: String, CodingKey {
-        case id
-        case text
-        case userId
-        case timestamp
-        case userDisplayName
-    }
-
      // Custom initializer
     init(id: String? = nil, text: String, userId: String, timestamp: Date, userDisplayName: String) {
         self.id = id

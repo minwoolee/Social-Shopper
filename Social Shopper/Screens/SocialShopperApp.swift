@@ -13,6 +13,8 @@ import FirebaseFirestore
 @main
 struct SocialShopperApp: App {
 
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
     @State var productManager: ProductManager
     @State var cartManager: CartManager
 
@@ -25,7 +27,7 @@ struct SocialShopperApp: App {
     var body: some Scene {
         WindowGroup {
             TabView {
-                ProductListView(productManager: productManager)
+                ProductListView()
                     .tabItem {
                         Image(systemName: "list.bullet.below.rectangle")
                         Text("Products")
@@ -38,7 +40,14 @@ struct SocialShopperApp: App {
                     }
             }
             .environment(cartManager)
+            .environment(productManager)
         }
+    }
+}
+
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        return true
     }
 }
 
