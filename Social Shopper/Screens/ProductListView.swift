@@ -8,8 +8,10 @@ import SwiftUI
 
 struct ProductListView: View {
     @Environment(ProductManager.self) var productManager
+    @Environment(UserManager.self) var userManager
     @State private var searchText = ""
-    @State private var selectedCategory: String? = nil // Added state for selected category
+    @State private var selectedCategory: String? = nil
+    @State private var shouldShowLogoutSheet: Bool = false
 
     // Available categories (for the filter)
     let categories = ["All", "Electronics", "Clothing", "Home Goods", "Books"] // Added more categories
@@ -64,11 +66,28 @@ struct ProductListView: View {
                 }
             }
             .navigationTitle("Products")
+            .navigationBarTitleDisplayMode(.inline)
             .task {
-                productManager.loadProducts() // Load products when the view appears
+                productManager.loadProducts()
             }
             .navigationDestination(for: Product.self) { product in
                 ProductDetailView(product: product)
+            }
+            .toolbar {
+                Button {
+                    shouldShowLogoutSheet.toggle()
+                } label: {
+                    Image(systemName: "gear")
+                }
+            }
+            .actionSheet(isPresented: $shouldShowLogoutSheet) {
+                .init(title: Text("Settings"), buttons: [
+                    .default(Text("Sign out"), action: {
+                        print("Signing out")
+                        userManager.signOut()
+                    }),
+                    .cancel()
+                ])
             }
         }
     }

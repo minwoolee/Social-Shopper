@@ -49,7 +49,7 @@ class CommentManager {
 
     // Add a comment for a specific product
     func addComment(text: String, userId: String, userDisplayName: String) {
-        let newComment = Comment(text: text, userId: userId, timestamp: Date(), userDisplayName: userDisplayName)
+        let newComment = Comment(text: text, userId: userId, timestamp: Date())
         do {
             _ = try db.collection("products").document(productID).collection("comments").addDocument(from: newComment)
             // No need to call loadComments() after adding. The snapshot listener will automatically update the list.

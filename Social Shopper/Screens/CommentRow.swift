@@ -12,13 +12,13 @@ struct CommentRow: View {
     var body: some View {
         VStack(alignment: .leading) {
             HStack {
-                Text(comment.userDisplayName) // Show user's display name
-                    .font(.headline)
+                Text(comment.userId) // Show user's display name
+                    .font(.caption)
                     .fontWeight(.semibold)
-                Spacer()
-                Text(comment.timestamp.formatted()) // Show formatted date
+                Text(comment.relativeTeimstamp)
                     .font(.caption)
                     .foregroundColor(.gray)
+                Spacer()
             }
             Text(comment.text)
                 .font(.body)
@@ -32,9 +32,8 @@ struct CommentRow: View {
     let comment = Comment(
         id: "123",
         text: "Hello world!",
-        userId: "minwoolee",
-        timestamp: Date(),
-        userDisplayName: "Min Woo Lee"
+        userId: "minwoolee@gmail.com",
+        timestamp: Date()
     )
     CommentRow(comment: comment)
 }

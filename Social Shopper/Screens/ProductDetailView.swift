@@ -11,10 +11,10 @@ struct ProductDetailView: View {
     var product: Product
     @Environment(CartManager.self) var cartManager
     @Environment(ProductManager.self) var productManager
+    @Environment(UserManager.self) var userManager
     @State private var quantity = 1
     @State private var commentText = ""
     @State var commentManager: CommentManager // Use ObservedObject
-    @State private var user: User? // Hold the current user.
     @State private var showShareSheet = false // State for showing share sheet
     @State private var paymentSuccess = false
 
@@ -119,9 +119,16 @@ struct ProductDetailView: View {
                 HStack {
                     TextField("Add a comment...", text: $commentText)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                    Button(action: {
-                        if !commentText.isEmpty, let user = user {
-                            commentManager.addComment(text: commentText, userId: user.id, userDisplayName: user.displayName)
+                    Button(
+action: {
+                        if !commentText.isEmpty,
+ let user = userManager.user {
+                            commentManager
+                                .addComment(
+                                    text: commentText,
+                                    userId: user.email!,
+                                    userDisplayName: user.email!
+                                )
                             commentText = "" // Clear the input field
                         }
                     }) {
@@ -132,12 +139,12 @@ struct ProductDetailView: View {
                             .foregroundColor(.white)
                             .cornerRadius(8)
                     }
-                    .disabled(commentText.isEmpty || user == nil) // Disable if text is empty or no user
+                    .disabled(commentText.isEmpty || userManager.user == nil) // Disable if text is empty or no user
                 }
                 .padding(.vertical)
 
                 // Display a message if the user is not logged in.
-                if user == nil {
+                if userManager.user == nil {
                     Text("Please log in to post comments.")
                         .foregroundColor(.red)
                         .font(.caption)
@@ -149,7 +156,6 @@ struct ProductDetailView: View {
         .onAppear {
             // Simulate fetching the user.  In a real app, you'd get this from your auth system.
             //  For this example, we'll create a dummy user.
-            user = User(id: "user123", displayName: "Test User")
             commentManager.loadComments()
         }
     }

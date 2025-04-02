@@ -12,14 +12,18 @@ struct Comment: Identifiable, Codable {
     var text: String
     var userId: String  //  Consider storing a user ID, not the whole user object.
     var timestamp: Date
-    var userDisplayName: String // Added display name
+
+    var relativeTeimstamp: String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .abbreviated
+        return formatter.localizedString(for: timestamp, relativeTo: .now)
+    }
 
      // Custom initializer
-    init(id: String? = nil, text: String, userId: String, timestamp: Date, userDisplayName: String) {
+    init(id: String? = nil, text: String, userId: String, timestamp: Date) {
         self.id = id
         self.text = text
         self.userId = userId
         self.timestamp = timestamp
-        self.userDisplayName = userDisplayName
     }
 }

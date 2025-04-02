@@ -8,42 +8,38 @@
 import SwiftUI
 import FirebaseCore
 import FirebaseFirestore
+import FirebaseAuth
 
 // Main App
 @main
 struct SocialShopperApp: App {
-
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     @State var productManager: ProductManager
     @State var cartManager: CartManager
+    @State var userManager: UserManager
 
     init() {
         FirebaseSetup.configure()
         productManager = ProductManager()
         cartManager = CartManager()
+        userManager = UserManager()
     }
 
     var body: some Scene {
         WindowGroup {
-            TabView {
-                ProductListView()
-                    .tabItem {
-                        Image(systemName: "list.bullet.below.rectangle")
-                        Text("Products")
-                    }
-
-                CartView()
-                    .tabItem {
-                        Image(systemName: "cart.fill")
-                        Text("Cart")
-                    }
+            if userManager.isSignedIn {
+                MainView()
+            } else {
+                LoginView()
             }
-            .environment(cartManager)
-            .environment(productManager)
         }
+        .environment(cartManager)
+        .environment(productManager)
+        .environment(userManager)
     }
 }
+
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
