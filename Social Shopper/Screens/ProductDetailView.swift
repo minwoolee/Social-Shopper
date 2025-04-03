@@ -14,11 +14,13 @@ struct ProductDetailView: View {
     @Environment(UserManager.self) var userManager
     @State private var quantity = 1
     @State private var commentText = ""
-    @State var commentManager: CommentManager // Use ObservedObject
-    @State private var showShareSheet = false // State for showing share sheet
+    @State var commentManager: CommentManager
+    @State private var showShareSheet = false
     @State private var paymentSuccess = false
+    @State private var isAddingToCart = false
+    @State private var isPostingComment = false
+    @State private var validationError: AppError?
 
-    // Use the product ID to initialize the comment manager.  This is crucial.
     init(product: Product) {
         self.product = product
         commentManager = CommentManager(productID: product.id ?? "")
@@ -30,7 +32,7 @@ struct ProductDetailView: View {
                 CachedAsyncImage(url: URL(string: product.imageUrl)) { phase in
                     switch phase {
                     case .empty:
-                        ProgressView() // Show loading indicator
+                        ProgressView()
                             .frame(height: 200)
                     case .success(let image):
                         image
@@ -39,9 +41,14 @@ struct ProductDetailView: View {
                             .frame(height: 200)
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                     case .failure:
-                        Image(systemName: "photo") // Error indicator
+                        Image(systemName: "photo")
                             .frame(height: 200)
                             .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .overlay(
+                                Text("Failed to load image")
+                                    .foregroundColor(.red)
+                                    .padding()
+                            )
                     @unknown default:
                         EmptyView()
                     }
@@ -64,39 +71,29 @@ struct ProductDetailView: View {
                 HStack {
                     Text("Quantity:")
                         .font(.headline)
-                    Stepper("\(quantity)", value: $quantity, in: 1...10) // Limit quantity
+                    Stepper("\(quantity)", value: $quantity, in: 1...10)
                 }
 
                 // Add to Cart Button
                 Button(action: {
-                    cartManager.addItem(product: product, quantity: quantity)
-                     paymentSuccess = true
+                    Task {
+                        await addToCart()
+                    }
                 }) {
                     Text("Add to Cart")
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
                 }
+                .primaryButton(isLoading: isAddingToCart)
+                .disabled(isAddingToCart)
                 .padding(.vertical)
-                 .alert(isPresented: $paymentSuccess) {
-                        Alert(title: Text("Success"), message: Text("\(product.name) added to cart!"), dismissButton: .default(Text("OK")))
-                }
 
                 // Share Button
                 Button(action: {
                     showShareSheet = true
                 }) {
                     Text("Share")
-                        .padding()
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
                 }
-                .sheet(isPresented: $showShareSheet) {
-                    // Use UIActivityViewController for sharing
-                    ActivityViewController(activityItems: [product.name, product.description, URL(string: product.imageUrl)!], applicationActivities: nil)
-                }
+                .secondaryButton()
+                .padding(.vertical)
 
                 // Live Comments Section
                 Text("Live Comments")
@@ -105,11 +102,10 @@ struct ProductDetailView: View {
 
                 // Comments List
                 if commentManager.isLoading {
-                    ProgressView() // Show loading indicator
-                } else if let error = commentManager.error {
-                    Text("Error: \(error.localizedDescription)") // Show error
-                }
-                else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                } else {
                     ForEach(commentManager.comments) { comment in
                         CommentRow(comment: comment)
                     }
@@ -119,45 +115,69 @@ struct ProductDetailView: View {
                 HStack {
                     TextField("Add a comment...", text: $commentText)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
-                    Button(
-action: {
-                        if !commentText.isEmpty,
- let user = userManager.user {
-                            commentManager
-                                .addComment(
-                                    text: commentText,
-                                    userId: user.email!,
-                                    userDisplayName: user.email!
-                                )
-                            commentText = "" // Clear the input field
+                    Button(action: {
+                        Task {
+                            await postComment()
                         }
                     }) {
                         Text("Post")
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color.blue)
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
                     }
-                    .disabled(commentText.isEmpty || userManager.user == nil) // Disable if text is empty or no user
+                    .primaryButton(isLoading: isPostingComment)
+                    .disabled(commentText.isEmpty || userManager.user == nil || isPostingComment)
                 }
                 .padding(.vertical)
 
-                // Display a message if the user is not logged in.
                 if userManager.user == nil {
                     Text("Please log in to post comments.")
                         .foregroundColor(.red)
                         .font(.caption)
                 }
-
             }
             .padding()
         }
         .onAppear {
-            // Simulate fetching the user.  In a real app, you'd get this from your auth system.
-            //  For this example, we'll create a dummy user.
             commentManager.loadComments()
         }
+        .alert("Success", isPresented: $paymentSuccess) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("\(product.name) added to cart!")
+        }
+        .errorAlert(
+            error: (
+                validationError ?? commentManager.error ?? cartManager.error
+            ) as? AppError
+        ) {
+            validationError = nil
+            commentManager.error = nil
+            cartManager.error = nil
+        }
+    }
+
+    private func addToCart() async {
+        isAddingToCart = true
+        defer { isAddingToCart = false }
+
+        do {
+            try await cartManager.addItem(product: product, quantity: quantity)
+            paymentSuccess = true
+        } catch {
+            validationError = .validationError("Failed to add item to cart: \(error.localizedDescription)")
+        }
+    }
+
+    private func postComment() async {
+        guard !commentText.isEmpty, let user = userManager.user else { return }
+        
+        isPostingComment = true
+        defer { isPostingComment = false }
+
+        commentManager.addComment(
+            text: commentText.trimmingCharacters(in: .whitespacesAndNewlines),
+            userId: user.email!,
+            userDisplayName: user.email!
+        )
+        commentText = ""
     }
 }
 

@@ -22,7 +22,6 @@ struct Product: Identifiable, Codable, Equatable, Hashable {
     var imageUrl: String
     var category: Category
 
-    // Example of a computed property.
     var formattedPrice: String {
         String(format: "$%.2f", price)
     }

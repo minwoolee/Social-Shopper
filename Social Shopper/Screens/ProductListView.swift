@@ -63,10 +63,6 @@ struct ProductListView: View {
                     Image(systemName: "gear")
                 }
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                }
-            }
             .fullScreenCover(isPresented: $shouldShowAddProductView) {
                 AddProductView()
             }
@@ -90,17 +86,19 @@ struct ProductListView: View {
             HStack {
                 ForEach(Category.allCases, id: \.self) { category in
                     Button(action: {
-                        selectedCategory = category
+                        if selectedCategory == nil || selectedCategory != category {
+                            selectedCategory = category
+                        } else {
+                            selectedCategory = nil
+                        }
                     }) {
                         Text(category.rawValue)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
                             .background(
-                                // Background color changes based on selection
                                 selectedCategory == category ? Color.blue : Color.gray.opacity(0.2)
                             )
                             .foregroundColor(
-                                // Text color changes based on selection
                                 selectedCategory == category ? .white : .blue
                             )
                             .cornerRadius(8)
