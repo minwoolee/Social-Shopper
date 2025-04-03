@@ -13,9 +13,10 @@ struct AddProductView: View {
     @State private var name: String = ""
     @State private var description: String = ""
     @State private var price: String = ""
-    @State private var errorMessage: String?
     @State private var imageURL: String = ""
-    @State private var category: String = ""
+    @State private var category: Category?
+    @State private var validationError: AppError?
+    @State private var isSubmitting = false
 
     var body: some View {
         NavigationView {
@@ -23,52 +24,104 @@ struct AddProductView: View {
                 Form {
                     Section(header: Text("Product Details")) {
                         TextField("Product Name", text: $name)
+                            .textContentType(.name)
                         TextField("Description", text: $description)
+                            .textContentType(.none)
                         TextField("Price", text: $price)
                             .keyboardType(.decimalPad)
                         TextField("Image URL", text: $imageURL)
-                        TextField("Category", text: $category)
-                    }
-
-                    if let errorMessage = errorMessage {
-                        Section {
-                            Text(errorMessage)
-                                .foregroundColor(.red)
+                            .textContentType(.URL)
+                        Picker("Category", selection: $category) {
+                            Text("---").tag(nil as Category?)
+                            ForEach(Category.allCases, id: \.self) {
+                                Text($0.rawValue).tag($0)
+                            }
                         }
                     }
 
+                    if isSubmitting {
+                        Section {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                Spacer()
+                            }
+                        }
+                    }
                 }
                 .navigationTitle("Add Product")
                 .navigationBarItems(trailing: Button("Cancel") {
                     presentationMode.wrappedValue.dismiss()
                 })
+                .disabled(isSubmitting)
+                
                 Button(action: {
-                    addProduct()
+                    Task {
+                        await addProduct()
+                    }
                 }) {
                     Text("Add Product")
-                }.buttonStyle(.borderedProminent)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isSubmitting)
+            }
+            .errorAlert(error: validationError ?? productManager.error) {
+                validationError = nil
+                productManager.error = nil
             }
         }
     }
 
-    private func addProduct() {
+    private func validateInput() -> AppError? {
+        if name.isEmpty {
+            return .validationError("Product name is required")
+        }
+        if description.isEmpty {
+            return .validationError("Description is required")
+        }
+        if price.isEmpty {
+            return .validationError("Price is required")
+        }
+        if let priceDouble = Double(price), priceDouble <= 0 {
+            return .validationError("Price must be greater than 0")
+        }
+        if imageURL.isEmpty {
+            return .validationError("Image URL is required")
+        }
+        if !imageURL.hasPrefix("http://") && !imageURL.hasPrefix("https://") {
+            return .validationError("Image URL must start with http:// or https://")
+        }
+        if category == nil {
+            return .validationError("Category is required")
+        }
+        return nil
+    }
+
+    private func addProduct() async {
         // Validate input
-        guard !name.isEmpty, !description.isEmpty, let price = Double(price), !imageURL.isEmpty, !category.isEmpty else {
-            errorMessage = "Please fill in all fields correctly."
+        if let error = validateInput() {
+            validationError = error
             return
         }
 
-        let newProduct = Product(
-            name: name,
-            description: description,
-            price: price,
-            imageUrl: imageURL,
-            category: category
-        )
-        productManager.addProduct(product: newProduct)
+        isSubmitting = true
+        defer { isSubmitting = false }
 
-        // Dismiss the view
-        presentationMode.wrappedValue.dismiss()
+        let newProduct = Product(
+            name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+            description: description.trimmingCharacters(in: .whitespacesAndNewlines),
+            price: Double(price) ?? 0,
+            imageUrl: imageURL.trimmingCharacters(in: .whitespacesAndNewlines),
+            category: category!
+        )
+
+        do {
+            try await productManager.addProduct(product: newProduct)
+            presentationMode.wrappedValue.dismiss()
+        } catch {
+            // Error is already handled by ProductManager
+            print("Failed to add product: \(error.localizedDescription)")
+        }
     }
 }
 

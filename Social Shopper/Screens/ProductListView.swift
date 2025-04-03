@@ -10,12 +10,9 @@ struct ProductListView: View {
     @Environment(ProductManager.self) var productManager
     @Environment(UserManager.self) var userManager
     @State private var searchText = ""
-    @State private var selectedCategory: String? = nil
+    @State private var selectedCategory: Category?
     @State private var shouldShowLogoutSheet: Bool = false
     @State private var shouldShowAddProductView: Bool = false
-
-    // Available categories (for the filter)
-    let categories = ["All", "Electronics", "Clothing", "Home Goods", "Books"] // Added more categories
 
     var body: some View {
         NavigationStack {
@@ -30,9 +27,8 @@ struct ProductListView: View {
 
                 // Product List
                 if productManager.isLoading {
-                    ProgressView() // Show loading indicator
-                } else if let error = productManager.error {
-                    Text("Error: \(error.localizedDescription)") // Show error message
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     List {
                         ForEach(filteredProducts) { product in
@@ -46,7 +42,7 @@ struct ProductListView: View {
             }
             .navigationTitle("Products")
             .navigationBarTitleDisplayMode(.inline)
-            .task {
+            .onAppear {
                 productManager.loadProducts()
             }
             .navigationDestination(for: Product.self) { product in
@@ -83,26 +79,29 @@ struct ProductListView: View {
                     .cancel()
                 ])
             }
+            .errorAlert(error: productManager.error) {
+                productManager.error = nil
+            }
         }
     }
 
     var categoryFilterView: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack {
-                ForEach(categories, id: \.self) { category in
+                ForEach(Category.allCases, id: \.self) { category in
                     Button(action: {
-                        selectedCategory = (category == "All") ? nil : category // nil for "All"
+                        selectedCategory = category
                     }) {
-                        Text(category)
+                        Text(category.rawValue)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
                             .background(
                                 // Background color changes based on selection
-                                selectedCategory == (category == "All" ? nil : category) ? Color.blue : Color.gray.opacity(0.2)
+                                selectedCategory == category ? Color.blue : Color.gray.opacity(0.2)
                             )
                             .foregroundColor(
                                 // Text color changes based on selection
-                                selectedCategory == (category == "All" ? nil : category) ? .white : .blue
+                                selectedCategory == category ? .white : .blue
                             )
                             .cornerRadius(8)
                     }
