@@ -11,22 +11,22 @@ struct ProductRow: View {
     var product: Product
 
     var body: some View {
-        HStack {
+        HStack(alignment: .top) {
             CachedAsyncImage(url: URL(string: product.imageUrl)) { phase in
                 switch phase {
                 case .empty:
                     Image(systemName: "photo") // Placeholder
-                        .frame(width: 50, height: 50)
+                        .frame(width: 100, height: 100)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 case .success(let image):
                     image
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 50, height: 50)
+                        .frame(width: 100, height: 100)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 case .failure:
                     Image(systemName: "photo") // Error indicator
-                        .frame(width: 50, height: 50)
+                        .frame(width: 100, height: 100)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 @unknown default:
                     EmptyView()
@@ -34,14 +34,19 @@ struct ProductRow: View {
             }
 
             VStack(alignment: .leading) {
-                Text(product.name)
-                    .font(.headline)
+                HStack {
+                    Text(product.name)
+                        .font(.headline)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.5)
+                    Text(product.formattedPrice)
+                        .font(.callout)
+                        .fontWeight(.bold)
+                }
                 Text(product.description)
-                    .font(.subheadline)
+                    .font(.caption)
+                    .lineLimit(5)
                     .foregroundColor(.gray)
-                Text(product.formattedPrice)
-                    .font(.callout)
-                    .fontWeight(.bold)
             }
         }
     }

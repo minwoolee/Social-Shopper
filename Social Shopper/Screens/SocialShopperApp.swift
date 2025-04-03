@@ -19,6 +19,8 @@ struct SocialShopperApp: App {
     @State var cartManager: CartManager
     @State var userManager: UserManager
 
+    @State private var showAddProductView: Bool = false
+
     init() {
         FirebaseSetup.configure()
         productManager = ProductManager()
@@ -39,6 +41,7 @@ struct SocialShopperApp: App {
         .environment(userManager)
     }
 }
+
 
 
 final class AppDelegate: NSObject, UIApplicationDelegate {

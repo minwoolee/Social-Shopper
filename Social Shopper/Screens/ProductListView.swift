@@ -12,6 +12,7 @@ struct ProductListView: View {
     @State private var searchText = ""
     @State private var selectedCategory: String? = nil
     @State private var shouldShowLogoutSheet: Bool = false
+    @State private var shouldShowAddProductView: Bool = false
 
     // Available categories (for the filter)
     let categories = ["All", "Electronics", "Clothing", "Home Goods", "Books"] // Added more categories
@@ -25,29 +26,7 @@ struct ProductListView: View {
                     .textFieldStyle(RoundedBorderTextFieldStyle())
 
                 // Category Filter
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack {
-                        ForEach(categories, id: \.self) { category in
-                            Button(action: {
-                                selectedCategory = (category == "All") ? nil : category // nil for "All"
-                            }) {
-                                Text(category)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .background(
-                                        // Background color changes based on selection
-                                        selectedCategory == (category == "All" ? nil : category) ? Color.blue : Color.gray.opacity(0.2)
-                                    )
-                                    .foregroundColor(
-                                        // Text color changes based on selection
-                                        selectedCategory == (category == "All" ? nil : category) ? .white : .blue
-                                    )
-                                    .cornerRadius(8)
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
-                }
+                categoryFilterView
 
                 // Product List
                 if productManager.isLoading {
@@ -74,11 +53,26 @@ struct ProductListView: View {
                 ProductDetailView(product: product)
             }
             .toolbar {
+                Button(action: {
+                    shouldShowAddProductView.toggle()
+                }) {
+                    Image(systemName: "plus")
+                }
+                .opacity(
+                    userManager.user?.email == "minwoolee@gmail.com" ? 1 : 0
+                )
                 Button {
                     shouldShowLogoutSheet.toggle()
                 } label: {
                     Image(systemName: "gear")
                 }
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                }
+            }
+            .fullScreenCover(isPresented: $shouldShowAddProductView) {
+                AddProductView()
             }
             .actionSheet(isPresented: $shouldShowLogoutSheet) {
                 .init(title: Text("Settings"), buttons: [
@@ -89,6 +83,32 @@ struct ProductListView: View {
                     .cancel()
                 ])
             }
+        }
+    }
+
+    var categoryFilterView: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack {
+                ForEach(categories, id: \.self) { category in
+                    Button(action: {
+                        selectedCategory = (category == "All") ? nil : category // nil for "All"
+                    }) {
+                        Text(category)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                // Background color changes based on selection
+                                selectedCategory == (category == "All" ? nil : category) ? Color.blue : Color.gray.opacity(0.2)
+                            )
+                            .foregroundColor(
+                                // Text color changes based on selection
+                                selectedCategory == (category == "All" ? nil : category) ? .white : .blue
+                            )
+                            .cornerRadius(8)
+                    }
+                }
+            }
+            .padding(.horizontal)
         }
     }
 
@@ -112,4 +132,5 @@ struct ProductListView: View {
 #Preview {
     ProductListView()
         .environment(ProductManager())
+        .environment(UserManager())
 }
