@@ -13,15 +13,11 @@ struct ProductListView: View {
     @State private var selectedCategory: Category?
     @State private var shouldShowLogoutSheet: Bool = false
     @State private var shouldShowAddProductView: Bool = false
+    @State private var shouldShowError: Bool = false
 
     var body: some View {
         NavigationStack {
             VStack {
-                // Search Bar
-                TextField("Search products", text: $searchText)
-                    .padding(.horizontal)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-
                 // Category Filter
                 categoryFilterView
 
@@ -42,6 +38,10 @@ struct ProductListView: View {
             }
             .navigationTitle("Products")
             .navigationBarTitleDisplayMode(.inline)
+            .searchable(
+                text: $searchText,
+                prompt: "Search products",
+            )
             .onAppear {
                 productManager.loadProducts()
             }

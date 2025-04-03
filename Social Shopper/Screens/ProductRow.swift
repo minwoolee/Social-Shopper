@@ -39,13 +39,14 @@ struct ProductRow: View {
                         .font(.headline)
                         .lineLimit(2)
                         .minimumScaleFactor(0.5)
+                    Spacer()
                     Text(product.formattedPrice)
                         .font(.callout)
                         .fontWeight(.bold)
                 }
                 Text(product.description)
                     .font(.caption)
-                    .lineLimit(5)
+                    .lineLimit(3)
                     .foregroundColor(.gray)
             }
         }
