@@ -7,39 +7,123 @@
 import Foundation
 import Observation
 import FirebaseFirestore
+import FirebaseAuth
 
 @Observable
 class CartManager {
+    static let shared = CartManager()
+    
     var items: [CartItem] = []
     var paymentSuccess = false
     var error: AppError?
+    var isLoading = false
 
-    private let cartKey = "cartItems"
-    private let taxRate = 0.10 // 10% tax rate
+    private var db = Firestore.firestore()
+    private var listener: ListenerRegistration?
 
-    init() {
-        loadCart()
+    private init() {
+        setupCartListener()
+    }
+
+    func removeCartListener() {
+        listener?.remove()
+    }
+
+    func setupCartListener() {
+        guard let userId = Auth.auth().currentUser?.uid else { return }
+        
+        listener?.remove()
+        listener = db.collection("carts").document(userId).collection("cart")
+            .addSnapshotListener { [weak self] (querySnapshot, error) in
+                guard let self = self else { return }
+                
+                if let error = error {
+                    self.error = .databaseError("Failed to load cart: \(error.localizedDescription)")
+                    return
+                }
+                
+                guard let documents = querySnapshot?.documents else {
+                    self.items = []
+                    return
+                }
+                
+                do {
+                    self.items = try documents.compactMap { document in
+                        try document.data(as: CartItem.self)
+                    }
+                } catch {
+                    self.error = .databaseError("Failed to decode cart items: \(error.localizedDescription)")
+                }
+            }
     }
 
     // Add item to cart
     func addItem(product: Product, quantity: Int = 1) async throws {
+        guard let userId = UserManager.shared.user?.uid else {
+            error = .authenticationError("User not authenticated")
+            throw error!
+        }
+        
         guard quantity > 0 else {
             error = .validationError("Quantity must be greater than 0")
             throw error!
         }
         
-        if let index = items.firstIndex(where: { $0.product.id == product.id }) {
-            items[index].quantity += quantity
-        } else {
-            items.append(CartItem(product: product, quantity: quantity))
+        do {
+            // Check if item already exists in cart
+            if let existingItem = items.first(where: { $0.product.id == product.id }) {
+                // Update quantity of existing item
+                try await updateItemQuantity(item: existingItem, newQuantity: existingItem.quantity + quantity)
+            } else {
+                // Create new cart item
+                let cartItem = CartItem(product: product, quantity: quantity, userId: userId)
+                try db.collection("carts").document(userId).collection("cart").addDocument(from: cartItem)
+            }
+        } catch {
+            self.error = .databaseError("Failed to add item to cart: \(error.localizedDescription)")
+            throw self.error ?? .unknownError("Failed to add item to cart")
         }
-        saveCart()
+    }
+
+    // Update item quantity
+    private func updateItemQuantity(item: CartItem, newQuantity: Int) async throws {
+        guard let itemId = item.id else {
+            error = .validationError("Invalid cart item")
+            throw error!
+        }
+        guard let userId = UserManager.shared.user?.uid else {
+            error = .authenticationError("User not authenticated")
+            throw error!
+        }
+
+        do {
+            try await db.collection("carts").document(userId).collection("cart").document(itemId).updateData([
+                "quantity": newQuantity,
+                "updatedAt": Date()
+            ])
+        } catch {
+            self.error = .databaseError("Failed to update item quantity: \(error.localizedDescription)")
+            throw self.error ?? .unknownError("Failed to update item quantity")
+        }
     }
 
     // Remove item from cart
-    func removeItem(item: CartItem) {
-        items.removeAll { $0.id == item.id }
-        saveCart()
+    func removeItem(item: CartItem) async throws {
+        guard let itemId = item.id else {
+            error = .validationError("Invalid cart item")
+            throw error!
+        }
+        guard let userId = UserManager.shared.user?.uid else {
+            error = .authenticationError("User not authenticated")
+            throw error!
+        }
+
+        do {
+            try await db.collection("carts").document(userId).collection("cart").document(itemId).delete()
+        } catch {
+            self.error = .databaseError("Failed to remove item from cart: \(error.localizedDescription)")
+            throw self.error ?? .unknownError("Failed to remove item from cart")
+        }
     }
 
     // Get subtotal (price before tax)
@@ -51,7 +135,7 @@ class CartManager {
     
     // Get tax amount
     func getTax() -> Double {
-        return getSubtotal() * taxRate
+        return getSubtotal() * 0.10 // 10% tax rate
     }
 
     // Get total price including tax
@@ -59,32 +143,31 @@ class CartManager {
         return getSubtotal() + getTax()
     }
 
-    func clearCart() {
-        items.removeAll()
-        saveCart()
-        paymentSuccess = true
-    }
-
-    // Save cart to UserDefaults
-    private func saveCart() {
+    // Clear cart
+    func clearCart() async throws {
+        guard let userId = Auth.auth().currentUser?.uid else {
+            error = .authenticationError("User not authenticated")
+            throw error!
+        }
+        
         do {
-            let encoded = try JSONEncoder().encode(items)
-            UserDefaults.standard.set(encoded, forKey: cartKey)
+            let batch = db.batch()
+            let snapshot = try await db.collection("carts").document(userId).collection("cart")
+                .getDocuments()
+            
+            for document in snapshot.documents {
+                batch.deleteDocument(document.reference)
+            }
+            
+            try await batch.commit()
+            paymentSuccess = true
         } catch {
-            self.error = .databaseError("Failed to save cart: \(error.localizedDescription)")
-            print("Error encoding cart: \(error.localizedDescription)")
+            self.error = .databaseError("Failed to clear cart: \(error.localizedDescription)")
+            throw self.error ?? .unknownError("Failed to clear cart")
         }
     }
 
-    // Load cart from UserDefaults
-    private func loadCart() {
-        guard let data = UserDefaults.standard.data(forKey: cartKey) else { return }
-        do {
-            let decoded = try JSONDecoder().decode([CartItem].self, from: data)
-            items = decoded
-        } catch {
-            self.error = .databaseError("Failed to load cart: \(error.localizedDescription)")
-            print("Error decoding cart: \(error.localizedDescription)")
-        }
+    deinit {
+        listener?.remove()
     }
 }

@@ -24,8 +24,8 @@ struct SocialShopperApp: App {
     init() {
         FirebaseSetup.configure()
         productManager = ProductManager()
-        cartManager = CartManager()
-        userManager = UserManager()
+        cartManager = CartManager.shared
+        userManager = UserManager.shared
     }
 
     var body: some Scene {

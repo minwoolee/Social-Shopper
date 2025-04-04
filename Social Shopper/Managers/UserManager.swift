@@ -12,12 +12,19 @@ import FirebaseAuth
 @Observable
 final class UserManager {
 
+    static let shared = UserManager()
+
     var isSignedIn: Bool = false
 
-    init() {
+    private init() {
         _ = Auth.auth().addStateDidChangeListener { _, user in
             self.isSignedIn = user != nil
             print("User signed in: \(self.isSignedIn)")
+            
+            if self.isSignedIn {
+                // User has signed in, set up cart listener
+                CartManager.shared.setupCartListener()
+            }
         }
     }
 
@@ -28,6 +35,7 @@ final class UserManager {
     func signOut() {
         if let _ = try? Auth.auth().signOut() {
             isSignedIn = false
+            CartManager.shared.removeCartListener()
         }
     }
 }

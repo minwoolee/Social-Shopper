@@ -67,7 +67,7 @@ struct ProductListView: View {
                 AddProductView()
             }
             .actionSheet(isPresented: $shouldShowLogoutSheet) {
-                .init(title: Text("Settings"), buttons: [
+                .init(title: Text(UserManager.shared.user?.email ?? ""), buttons: [
                     .default(Text("Sign out"), action: {
                         print("Signing out")
                         userManager.signOut()
@@ -129,5 +129,5 @@ struct ProductListView: View {
 #Preview {
     ProductListView()
         .environment(ProductManager())
-        .environment(UserManager())
+        .environment(UserManager.shared)
 }

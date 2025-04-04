@@ -45,7 +45,9 @@ struct CartItemRow: View {
             }
             Spacer()
             Button(action: {
-                cartManager.removeItem(item: item)
+                Task {
+                    try? await cartManager.removeItem(item: item)
+                }
             }) {
                 Image(systemName: "trash")
                     .foregroundColor(.red)
@@ -56,5 +58,5 @@ struct CartItemRow: View {
 
 #Preview {
     CartItemRow(item: .sample)
-        .environment(CartManager())
+        .environment(CartManager.shared)
 }

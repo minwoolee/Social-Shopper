@@ -107,7 +107,7 @@ struct CartView: View {
             }
             
             // Process payment
-            cartManager.clearCart()
+            try await cartManager.clearCart()
             paymentSuccess = true
         } catch {
             validationError = .validationError("Payment failed: \(error.localizedDescription)")
@@ -117,5 +117,5 @@ struct CartView: View {
 
 #Preview {
     CartView()
-        .environment(CartManager())
+        .environment(CartManager.shared)
 }

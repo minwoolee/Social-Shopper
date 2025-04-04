@@ -197,6 +197,6 @@ struct ActivityViewController: UIViewControllerRepresentable {
 
 #Preview {
     ProductDetailView(product: .sample)
-        .environment(CartManager())
+        .environment(CartManager.shared)
         .environment(ProductManager())
 }
