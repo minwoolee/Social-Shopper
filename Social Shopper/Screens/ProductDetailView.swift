@@ -82,6 +82,7 @@ struct ProductDetailView: View {
                     }
                 }) {
                     Text("Add to Cart")
+                        .frame(maxWidth: .infinity)
                 }
                 .primaryButton(isLoading: isAddingToCart)
                 .disabled(isAddingToCart)
