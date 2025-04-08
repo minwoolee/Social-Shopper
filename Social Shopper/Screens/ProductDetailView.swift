@@ -113,9 +113,9 @@ struct ProductDetailView: View {
                             await postComment()
                         }
                     }) {
-                        Text("Post")
+                        Image(systemName: "paperplane.fill")
                     }
-                    .primaryButton(isLoading: isPostingComment)
+                    .iconButton()
                     .disabled(commentText.isEmpty || userManager.user == nil || isPostingComment)
                 }
                 .padding(.vertical)
