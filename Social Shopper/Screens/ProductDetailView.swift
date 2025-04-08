@@ -20,12 +20,12 @@ struct ProductDetailView: View {
     @State private var isAddingToCart = false
     @State private var isPostingComment = false
     @State private var validationError: AppError?
-
+    
     init(product: Product) {
         self.product = product
         commentManager = CommentManager(productID: product.id ?? "")
     }
-
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -53,7 +53,7 @@ struct ProductDetailView: View {
                         EmptyView()
                     }
                 }
-
+                
                 // Product Name and Description
                 Text(product.name)
                     .font(.title)
@@ -61,19 +61,19 @@ struct ProductDetailView: View {
                 Text(product.description)
                     .font(.body)
                     .foregroundColor(.gray)
-
+                
                 // Product Price
                 Text("Price: \(product.formattedPrice)")
                     .font(.headline)
                     .fontWeight(.semibold)
-
+                
                 // Quantity Picker
                 HStack {
                     Text("Quantity:")
                         .font(.headline)
                     Stepper("\(quantity)", value: $quantity, in: 1...10)
                 }
-
+                
                 // Add to Cart Button
                 Button(action: {
                     Task {
@@ -85,7 +85,7 @@ struct ProductDetailView: View {
                 .primaryButton(isLoading: isAddingToCart)
                 .disabled(isAddingToCart)
                 .padding(.vertical)
-
+                
                 // Share Button
                 Button(action: {
                     showShareSheet = true
@@ -94,23 +94,35 @@ struct ProductDetailView: View {
                 }
                 .secondaryButton()
                 .padding(.vertical)
-
+                
                 // Live Comments Section
                 Text("Live Comments")
                     .font(.title2)
                     .fontWeight(.semibold)
-
+                
                 // Comments List
                 if commentManager.isLoading {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                         .padding()
                 } else {
-                    ForEach(commentManager.comments) { comment in
-                        CommentRow(comment: comment)
+                    ScrollViewReader { proxy in
+                        LazyVStack {
+                            ForEach(commentManager.comments.sorted { $0.timestamp < $1.timestamp }) { comment in
+                                CommentRow(comment: comment, isCurrentUser: comment.userId == userManager.user?.email)
+                                    .id(comment.id)
+                            }
+                        }
+                        .onChange(of: commentManager.comments) {
+                            if let lastComment = commentManager.comments.max(by: { $0.timestamp < $1.timestamp }) {
+                                withAnimation {
+                                    proxy.scrollTo(lastComment.id, anchor: .bottom)
+                                }
+                            }
+                        }
                     }
                 }
-
+                
                 // Comment Input
                 HStack {
                     TextField("Add a comment...", text: $commentText)
@@ -126,7 +138,7 @@ struct ProductDetailView: View {
                     .disabled(commentText.isEmpty || userManager.user == nil || isPostingComment)
                 }
                 .padding(.vertical)
-
+                
                 if userManager.user == nil {
                     Text("Please log in to post comments.")
                         .foregroundColor(.red)
@@ -153,11 +165,11 @@ struct ProductDetailView: View {
             cartManager.error = nil
         }
     }
-
+    
     private func addToCart() async {
         isAddingToCart = true
         defer { isAddingToCart = false }
-
+        
         do {
             try await cartManager.addItem(product: product, quantity: quantity)
             paymentSuccess = true
@@ -165,13 +177,13 @@ struct ProductDetailView: View {
             validationError = .validationError("Failed to add item to cart: \(error.localizedDescription)")
         }
     }
-
+    
     private func postComment() async {
         guard !commentText.isEmpty, let user = userManager.user else { return }
         
         isPostingComment = true
         defer { isPostingComment = false }
-
+        
         commentManager.addComment(
             text: commentText.trimmingCharacters(in: .whitespacesAndNewlines),
             userId: user.email!,
@@ -184,12 +196,12 @@ struct ProductDetailView: View {
 struct ActivityViewController: UIViewControllerRepresentable {
     var activityItems: [Any]
     var applicationActivities: [UIActivity]? = nil
-
+    
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let activityViewController = UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
         return activityViewController
     }
-
+    
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
         // Update the view controller if needed.  In this case, nothing to update.
     }
