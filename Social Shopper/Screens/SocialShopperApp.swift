@@ -15,11 +15,12 @@ import FirebaseAuth
 struct SocialShopperApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
-    @State var productManager: ProductManager
+    @State private var deepLinkDestination: DeepLinkDestination?
+    @State private var productManager: ProductManager
+    @State private var showDeepLinkError = false
+    @State private var showAddProductView: Bool = false
     @State var cartManager: CartManager
     @State var userManager: UserManager
-
-    @State private var showAddProductView: Bool = false
 
     init() {
         FirebaseSetup.configure()
@@ -32,6 +33,28 @@ struct SocialShopperApp: App {
         WindowGroup {
             if userManager.isSignedIn {
                 MainView()
+                    .onOpenURL { url in
+                        if let destination = DeepLink.handleURL(url) {
+                            deepLinkDestination = destination
+                        }
+                    }
+                    .sheet(item: $deepLinkDestination) { destination in
+                        switch destination {
+                        case .product(let id):
+                            NavigationStack {
+                                LoadingProductView(productId: id) { product in
+                                    ProductDetailView(product: product)
+                                }
+                            }
+                        }
+                    }
+                    .alert("Error", isPresented: $showDeepLinkError) {
+                        Button("OK", role: .cancel) {
+                            deepLinkDestination = nil
+                        }
+                    } message: {
+                        Text("Failed to load the product")
+                    }
             } else {
                 LoginView()
             }
@@ -61,5 +84,49 @@ class FirebaseSetup {
         let settings = db.settings
         settings.cacheSettings = PersistentCacheSettings()
         db.settings = settings
+    }
+}
+
+// Add LoadingProductView to handle async product loading
+struct LoadingProductView<Content: View>: View {
+    let productId: String
+    let content: (Product) -> Content
+
+    @Environment(ProductManager.self) private var productManager
+    @Environment(\.dismiss) private var dismiss
+    @State private var product: Product?
+    @State private var error: Error?
+
+    init(productId: String, @ViewBuilder content: @escaping (Product) -> Content) {
+        self.productId = productId
+        self.content = content
+    }
+
+    var body: some View {
+        Group {
+            if let product {
+                content(product)
+            } else {
+                ProgressView("Loading product...")
+            }
+        }
+        .task {
+            do {
+                product = try await productManager.loadProduct(by: productId)
+            } catch {
+                self.error = error
+                dismiss()
+            }
+        }
+    }
+}
+
+// Make DeepLinkDestination conform to Identifiable
+extension DeepLinkDestination: Identifiable {
+    var id: String {
+        switch self {
+        case .product(let id):
+            return "product_\(id)"
+        }
     }
 }

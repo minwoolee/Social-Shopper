@@ -81,6 +81,20 @@ class ProductManager {
         products.first { $0.id == id }
     }
 
+    // ADD: New method to fetch a single product
+    func loadProduct(by id: String) async throws -> Product {
+        do {
+            let document = try await db.collection("products").document(id).getDocument()
+            guard let product = try? document.data(as: Product.self) else {
+                throw AppError.databaseError("Product not found")
+            }
+            return product
+        } catch {
+            self.error = .databaseError("Failed to load product: \(error.localizedDescription)")
+            throw self.error ?? .unknownError("Failed to load product")
+        }
+    }
+
     // Delete a product
     func deleteProduct(id: String) async throws {
         isLoading = true

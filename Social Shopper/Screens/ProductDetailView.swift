@@ -26,6 +26,20 @@ struct ProductDetailView: View {
         self.product = product
         commentManager = CommentManager(productID: product.id ?? "")
     }
+    
+    private var shareItems: [Any] {
+        var items: [Any] = [
+            "Check out \(product.name) - \(product.formattedPrice)",
+            URL(string: product.imageUrl)!
+        ]
+
+        if let productId = product.id,
+            let deepLink = DeepLink.productURL(id: productId) {
+            items.append(deepLink)
+        }
+
+        return items
+    }
 
     var body: some View {
         ScrollView {
@@ -138,7 +152,7 @@ struct ProductDetailView: View {
             }
         }
         .sheet(isPresented: $showShareSheet) {
-            ActivityViewController(activityItems: [product.name, URL(string: product.imageUrl)!])
+            ActivityViewController(activityItems: shareItems)
         }
         .onAppear {
             commentManager.loadComments()
