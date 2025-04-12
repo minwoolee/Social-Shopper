@@ -17,8 +17,9 @@ struct SocialShopperApp: App {
 
     @State private var deepLinkDestination: DeepLinkDestination?
     @State private var productManager: ProductManager
-    @State private var showDeepLinkError = false
+    @State private var deepLinkProductId: String?
     @State private var showAddProductView: Bool = false
+    @State private var showError = false
     @State var cartManager: CartManager
     @State var userManager: UserManager
 
@@ -32,36 +33,26 @@ struct SocialShopperApp: App {
     var body: some Scene {
         WindowGroup {
             if userManager.isSignedIn {
-                MainView()
+                MainView(deepLinkProductId: $deepLinkProductId)
+                    .environment(productManager)
+                    .environment(cartManager)
+                    .environment(userManager)
                     .onOpenURL { url in
-                        if let destination = DeepLink.handleURL(url) {
-                            deepLinkDestination = destination
+                        if let destination = DeepLink.handleURL(url),
+                           case .product(let id) = destination {
+                            deepLinkProductId = id
                         }
                     }
-                    .sheet(item: $deepLinkDestination) { destination in
-                        switch destination {
-                        case .product(let id):
-                            NavigationStack {
-                                LoadingProductView(productId: id) { product in
-                                    ProductDetailView(product: product)
-                                }
-                            }
-                        }
-                    }
-                    .alert("Error", isPresented: $showDeepLinkError) {
-                        Button("OK", role: .cancel) {
-                            deepLinkDestination = nil
-                        }
+                    .alert("Error", isPresented: $showError) {
+                        Button("OK", role: .cancel) { }
                     } message: {
                         Text("Failed to load the product")
                     }
             } else {
                 LoginView()
+                    .environment(userManager)
             }
         }
-        .environment(cartManager)
-        .environment(productManager)
-        .environment(userManager)
     }
 }
 

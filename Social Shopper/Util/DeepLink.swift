@@ -30,6 +30,6 @@ enum DeepLink {
     }
 }
 
-enum DeepLinkDestination {
+enum DeepLinkDestination: Equatable {
     case product(id: String)
 }

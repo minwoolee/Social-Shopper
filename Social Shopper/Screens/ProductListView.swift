@@ -9,6 +9,7 @@ import SwiftUI
 struct ProductListView: View {
     @Environment(ProductManager.self) var productManager
     @Environment(UserManager.self) var userManager
+    @Environment(\.scenePhase) private var scenePhase
     @State private var searchText = ""
     @State private var selectedCategory: Category?
     @State private var shouldShowLogoutSheet: Bool = false
@@ -26,11 +27,9 @@ struct ProductListView: View {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
-                    List {
-                        ForEach(filteredProducts) { product in
-                            NavigationLink(value: product) {
-                                ProductRow(product: product)
-                            }
+                    List(filteredProducts) { product in
+                        NavigationLink(value: product) {
+                            ProductRow(product: product)
                         }
                     }
                     .listStyle(PlainListStyle())
@@ -42,6 +41,11 @@ struct ProductListView: View {
                 text: $searchText,
                 prompt: "Search products",
             )
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    productManager.loadProducts()
+                }
+            }
             .onAppear {
                 productManager.loadProducts()
             }
