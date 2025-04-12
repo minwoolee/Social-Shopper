@@ -9,7 +9,7 @@ import SwiftUI
 
 struct AddProductView: View {
     @Environment(ProductManager.self) var productManager
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     @State private var name: String = ""
     @State private var description: String = ""
     @State private var price: String = ""
@@ -51,10 +51,10 @@ struct AddProductView: View {
                 }
                 .navigationTitle("Add Product")
                 .navigationBarItems(trailing: Button("Cancel") {
-                    presentationMode.wrappedValue.dismiss()
+                    dismiss()
                 })
                 .disabled(isSubmitting)
-                
+
                 Button(action: {
                     Task {
                         await addProduct()
@@ -117,7 +117,7 @@ struct AddProductView: View {
 
         do {
             try await productManager.addProduct(product: newProduct)
-            presentationMode.wrappedValue.dismiss()
+            dismiss()
         } catch {
             // Error is already handled by ProductManager
             print("Failed to add product: \(error.localizedDescription)")
