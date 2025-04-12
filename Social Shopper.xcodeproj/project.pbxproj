@@ -44,7 +44,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				"Social-Shopper-Info.plist",
 			);
 			target = 28E071322D9C81C7002F99B5 /* Social Shopper */;
 		};

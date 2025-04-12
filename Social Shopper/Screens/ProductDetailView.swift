@@ -14,19 +14,16 @@ struct ProductDetailView: View {
     @Environment(ProductManager.self) var productManager
     @Environment(UserManager.self) var userManager
     @State private var quantity = 1
-    @State private var commentText = ""
-    @State var commentManager: CommentManager
     @State private var showShareSheet = false
+    @State private var showComments = false
     @State private var paymentSuccess = false
     @State private var isAddingToCart = false
-    @State private var isPostingComment = false
     @State private var validationError: AppError?
 
     init(product: Product) {
         self.product = product
-        commentManager = CommentManager(productID: product.id ?? "")
     }
-    
+
     private var shareItems: [Any] {
         var items: [Any] = [
             "Check out \(product.name) - \(product.formattedPrice)",
@@ -34,7 +31,7 @@ struct ProductDetailView: View {
         ]
 
         if let productId = product.id,
-            let deepLink = DeepLink.productURL(id: productId) {
+           let deepLink = DeepLink.productURL(id: productId) {
             items.append(deepLink)
         }
 
@@ -69,7 +66,6 @@ struct ProductDetailView: View {
                     }
                 }
 
-                // Product Name and Description
                 Text(product.name)
                     .font(.title)
                     .fontWeight(.bold)
@@ -77,19 +73,16 @@ struct ProductDetailView: View {
                     .font(.body)
                     .foregroundColor(.gray)
 
-                // Product Price
                 Text("Price: \(product.formattedPrice)")
                     .font(.headline)
                     .fontWeight(.semibold)
 
-                // Quantity Picker
                 HStack {
                     Text("Quantity:")
                         .font(.headline)
                     Stepper("\(quantity)", value: $quantity, in: 1...10)
                 }
 
-                // Add to Cart Button
                 Button(action: {
                     Task {
                         await addToCart()
@@ -100,45 +93,17 @@ struct ProductDetailView: View {
                 }
                 .primaryButton(isLoading: isAddingToCart)
                 .disabled(isAddingToCart)
-                .padding(.vertical)
 
-                // Live Comments Section
-                Text("Live Comments")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-
-                // Comments List
-                if commentManager.isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                } else {
-                    ForEach(commentManager.comments) { comment in
-                        CommentRow(comment: comment, isCurrentUser: comment.userId == userManager.user?.email)
+                Button(action: {
+                    showComments = true
+                }) {
+                    HStack {
+                        Image(systemName: "bubble.left")
+                        Text("View Comments")
                     }
+                    .frame(maxWidth: .infinity)
                 }
-
-                // Comment Input
-                HStack {
-                    TextField("Add a comment...", text: $commentText)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    Button(action: {
-                        Task {
-                            await postComment()
-                        }
-                    }) {
-                        Image(systemName: "paperplane.fill")
-                    }
-                    .iconButton()
-                    .disabled(commentText.isEmpty || userManager.user == nil || isPostingComment)
-                }
-                .padding(.vertical)
-
-                if userManager.user == nil {
-                    Text("Please log in to post comments.")
-                        .foregroundColor(.red)
-                        .font(.caption)
-                }
+                .secondaryButton()
             }
             .padding()
         }
@@ -154,21 +119,16 @@ struct ProductDetailView: View {
         .sheet(isPresented: $showShareSheet) {
             ActivityViewController(activityItems: shareItems)
         }
-        .onAppear {
-            commentManager.loadComments()
+        .sheet(isPresented: $showComments) {
+            CommentsView(product: product)
         }
         .alert("Success", isPresented: $paymentSuccess) {
             Button("OK", role: .cancel) { }
         } message: {
             Text("\(product.name) added to cart!")
         }
-        .errorAlert(
-            error: (
-                validationError ?? commentManager.error ?? cartManager.error
-            ) as? AppError
-        ) {
+        .errorAlert(error: validationError ?? cartManager.error) {
             validationError = nil
-            commentManager.error = nil
             cartManager.error = nil
         }
     }
@@ -183,20 +143,6 @@ struct ProductDetailView: View {
         } catch {
             validationError = .validationError("Failed to add item to cart: \(error.localizedDescription)")
         }
-    }
-
-    private func postComment() async {
-        guard !commentText.isEmpty, let user = userManager.user else { return }
-
-        isPostingComment = true
-        defer { isPostingComment = false }
-
-        commentManager.addComment(
-            text: commentText.trimmingCharacters(in: .whitespacesAndNewlines),
-            userId: user.email!,
-            userDisplayName: user.email!
-        )
-        commentText = ""
     }
 }
 
