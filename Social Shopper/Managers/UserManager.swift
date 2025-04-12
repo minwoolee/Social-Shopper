@@ -15,12 +15,13 @@ final class UserManager {
     static let shared = UserManager()
 
     var isSignedIn: Bool = false
+    var error: AppError?
 
     private init() {
         _ = Auth.auth().addStateDidChangeListener { _, user in
             self.isSignedIn = user != nil
             print("User signed in: \(self.isSignedIn)")
-            
+
             if self.isSignedIn {
                 // User has signed in, set up cart listener
                 CartManager.shared.setupCartListener()
@@ -36,6 +37,22 @@ final class UserManager {
         if let _ = try? Auth.auth().signOut() {
             isSignedIn = false
             CartManager.shared.removeCartListener()
+        }
+    }
+
+    func signIn(email: String, password: String) async {
+        do {
+            try await Auth.auth().signIn(withEmail: email, password: password)
+        } catch {
+            self.error = .authenticationError("Could not sign in user: \(error.localizedDescription)")
+        }
+    }
+
+    func createAccount(email: String, password: String) async {
+        do {
+            try await Auth.auth().createUser(withEmail: email, password: password)
+        } catch {
+            self.error = .authenticationError("Could not create account: \(error.localizedDescription)")
         }
     }
 }

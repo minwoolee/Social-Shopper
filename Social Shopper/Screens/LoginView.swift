@@ -4,14 +4,16 @@
 //
 //  Created by Min Woo Lee on 4/2/25.
 //
+
 import SwiftUI
 import FirebaseAuth
 
 struct LoginView: View {
-
-    @State var isLoginMode = false
-    @State var email = ""
-    @State var password = ""
+    @Environment(UserManager.self) private var userManager
+    @State private var isLoginMode = false
+    @State private var email = ""
+    @State private var password = ""
+    @State private var isLoading = false
 
     var body: some View {
         NavigationView {
@@ -34,45 +36,40 @@ struct LoginView: View {
                     .background(Color.white)
 
                     Button {
-                        handleAction()
+                        Task {
+                            await handleAction()
+                        }
                     } label: {
-                        HStack {
-                            Spacer()
-                            Text(isLoginMode ? "Log In" : "Create Account")
-                                .foregroundColor(.white)
-                                .padding(.vertical, 10)
-                                .font(.system(size: 14, weight: .semibold))
-                            Spacer()
-                        }.background(Color.blue)
-
+                        Text(isLoginMode ? "Log In" : "Create Account")
+                            .frame(maxWidth: .infinity)
                     }
+                    .primaryButton(isLoading: isLoading)
+                    .disabled(isLoading)
                 }
                 .padding()
-
             }
             .navigationTitle(isLoginMode ? "Log In" : "Create Account")
             .background(Color(.init(white: 0, alpha: 0.05))
                 .ignoresSafeArea())
+            .errorAlert(error: userManager.error) {
+                userManager.error = nil
+            }
         }
     }
 
-    private func handleAction() {
+    private func handleAction() async {
+        isLoading = true
+        defer { isLoading = false }
+
         if isLoginMode {
-            Auth.auth().signIn(withEmail: email, password: password)
+            await userManager.signIn(email: email, password: password)
         } else {
-            Auth
-                .auth()
-                .createUser(withEmail: email, password: password) { result, error in
-                    if let error = error {
-                        print("Error creating user: \(error.localizedDescription)")
-                        return
-                    }
-                    print("User created successfully!")
-                }
+            await userManager.createAccount(email: email, password: password)
         }
     }
 }
 
 #Preview {
     LoginView()
+        .environment(UserManager.shared)
 }
