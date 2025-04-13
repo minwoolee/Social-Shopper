@@ -14,66 +14,75 @@ class CommentManager {
     var comments: [String: [Comment]] = [:] // threadId: [Comments]
     var isLoading = false
     var error: Error?
-    
+
     private var db = Firestore.firestore()
     private var productID: String
     private var threadListeners: [String: ListenerRegistration] = [:]
     private var threadsListener: ListenerRegistration?
-    
+
     init(productID: String) {
         self.productID = productID
         loadThreads()
     }
-    
+
     func loadThreads() {
         isLoading = true
         error = nil
-        
+
         threadsListener?.remove()
-        
-        // Query threads where user is a participant
-        threadsListener = db.collection("products").document(productID)
-            .collection("threads")
-            .addSnapshotListener { [weak self] snapshot, error in
-                guard let self = self else { return }
-                
-                if let error = error {
-                    self.error = error
-                    return
-                }
-                
-                do {
-                    self.threads = try snapshot?.documents.compactMap {
-                        try $0.data(as: Thread.self)
-                    } ?? []
-                    
-                    // Load comments for each thread
-                    for thread in self.threads {
-                        self.loadComments(for: thread.id ?? "")
-                    }
-                } catch {
-                    self.error = error
-                }
-                
-                self.isLoading = false
+
+        // Query threads where user is either creator or participant
+        let threadsRef = db.collection("products").document(productID).collection("threads")
+        threadsListener = threadsRef.addSnapshotListener { [weak self] snapshot, error in
+            guard let self = self else { return }
+
+            if let error = error {
+                self.error = error
+                return
             }
+
+            do {
+                let allThreads = try snapshot?.documents.compactMap {
+                    try $0.data(as: Thread.self)
+                } ?? []
+
+                // Filter threads to only show where user is creator or participant
+                if let currentUserEmail = UserManager.shared.user?.email {
+                    self.threads = allThreads.filter { thread in
+                        thread.creatorId == currentUserEmail ||
+                        thread.participants.contains(currentUserEmail)
+                    }
+                } else {
+                    self.threads = []
+                }
+
+                // Load comments for each accessible thread
+                for thread in self.threads {
+                    self.loadComments(for: thread.id ?? "")
+                }
+            } catch {
+                self.error = error
+            }
+
+            self.isLoading = false
+        }
     }
-    
+
     func loadComments(for threadId: String) {
         threadListeners[threadId]?.remove()
-        
+
         let listener = db.collection("products").document(productID)
             .collection("threads").document(threadId)
             .collection("comments")
             .order(by: "timestamp", descending: false)
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self else { return }
-                
+
                 if let error = error {
                     self.error = error
                     return
                 }
-                
+
                 do {
                     self.comments[threadId] = try snapshot?.documents.compactMap {
                         try $0.data(as: Comment.self)
@@ -82,10 +91,10 @@ class CommentManager {
                     self.error = error
                 }
             }
-        
+
         threadListeners[threadId] = listener
     }
-    
+
     func createThread(title: String, userId: String) async throws -> Thread {
         let thread = Thread(
             productId: productID,
@@ -94,14 +103,14 @@ class CommentManager {
             createdAt: Date(),
             participants: [userId]
         )
-        
+
         let ref = try db.collection("products").document(productID)
             .collection("threads")
             .addDocument(from: thread)
-        
+
         return try await ref.getDocument(as: Thread.self)
     }
-    
+
     func addComment(text: String, userId: String, threadId: String) async throws {
         let comment = Comment(
             threadId: threadId,
@@ -109,13 +118,13 @@ class CommentManager {
             text: text,
             timestamp: Date()
         )
-        
+
         try db.collection("products").document(productID)
             .collection("threads").document(threadId)
             .collection("comments")
             .addDocument(from: comment)
     }
-    
+
     func addParticipant(_ userId: String, to threadId: String) async throws {
         try await db.collection("products").document(productID)
             .collection("threads").document(threadId)
@@ -123,7 +132,7 @@ class CommentManager {
                 "participants": FieldValue.arrayUnion([userId])
             ])
     }
-    
+
     deinit {
         threadsListener?.remove()
         threadListeners.values.forEach { $0.remove() }

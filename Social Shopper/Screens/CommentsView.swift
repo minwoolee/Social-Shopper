@@ -165,3 +165,38 @@ private struct CommentInputField: View {
         }
     }
 }
+
+struct ThreadRow: View {
+    let thread: Thread
+    let currentUserEmail: String?
+
+    private var isCreator: Bool {
+        currentUserEmail == thread.creatorId
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(thread.title)
+                    .font(.headline)
+                Spacer()
+                if isCreator {
+                    Text("Created by you")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                } else {
+                    Text("Participant")
+                        .font(.caption)
+                        .foregroundColor(.green)
+                }
+            }
+            Text(thread.formattedDate)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color.secondary.opacity(0.1))
+        .cornerRadius(8)
+    }
+}

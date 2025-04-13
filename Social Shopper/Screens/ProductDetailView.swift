@@ -22,26 +22,26 @@ struct ProductDetailView: View {
     @State private var validationError: AppError?
     @State private var commentManager: CommentManager
     @State private var newThreadTitle = ""
-    
+
     init(product: Product) {
         self.product = product
         self.commentManager = CommentManager(productID: product.id ?? "")
     }
-    
+
     private var shareItems: [Any] {
         var items: [Any] = [
             "Check out \(product.name) - \(product.formattedPrice)",
             URL(string: product.imageUrl)!
         ]
-        
+
         if let productId = product.id,
            let deepLink = DeepLink.productURL(id: productId) {
             items.append(deepLink)
         }
-        
+
         return items
     }
-    
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -69,24 +69,24 @@ struct ProductDetailView: View {
                         EmptyView()
                     }
                 }
-                
+
                 Text(product.name)
                     .font(.title)
                     .fontWeight(.bold)
                 Text(product.description)
                     .font(.body)
                     .foregroundColor(.gray)
-                
+
                 Text("Price: \(product.formattedPrice)")
                     .font(.headline)
                     .fontWeight(.semibold)
-                
+
                 HStack {
                     Text("Quantity:")
                         .font(.headline)
                     Stepper("\(quantity)", value: $quantity, in: 1...10)
                 }
-                
+
                 Button(action: {
                     Task {
                         await addToCart()
@@ -97,15 +97,15 @@ struct ProductDetailView: View {
                 }
                 .primaryButton(isLoading: isAddingToCart)
                 .disabled(isAddingToCart)
-                
+
                 // Threads Section
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("Discussion Threads")
                             .font(.headline)
-                        
+
                         Spacer()
-                        
+
                         Button(action: {
                             showNewThreadSheet = true
                         }) {
@@ -113,15 +113,18 @@ struct ProductDetailView: View {
                         }
                         .disabled(userManager.user == nil)
                     }
-                    
-                    if commentManager.isLoading {
+
+                    if userManager.user == nil {
+                        Text("Sign in to view and create discussion threads")
+                            .foregroundColor(.secondary)
+                    } else if commentManager.isLoading {
                         ProgressView()
                     } else if commentManager.threads.isEmpty {
-                        Text("No threads yet")
+                        Text("No threads available. Create one to start discussing!")
                             .foregroundColor(.secondary)
                     } else {
                         ForEach(commentManager.threads) { thread in
-                            ThreadRow(thread: thread)
+                            ThreadRow(thread: thread, currentUserEmail: userManager.user?.email)
                                 .onTapGesture {
                                     selectedThread = thread
                                 }
@@ -189,11 +192,11 @@ struct ProductDetailView: View {
             cartManager.error = nil
         }
     }
-    
+
     private func addToCart() async {
         isAddingToCart = true
         defer { isAddingToCart = false }
-        
+
         do {
             try await cartManager.addItem(product: product, quantity: quantity)
             paymentSuccess = true
@@ -203,35 +206,36 @@ struct ProductDetailView: View {
     }
 }
 
-struct ThreadRow: View {
-    let thread: Thread
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(thread.title)
-                .font(.headline)
-            Text("Created by: \(thread.creatorId)")
-                .font(.caption)
-            Text(thread.formattedDate)
-                .font(.caption2)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(Color.secondary.opacity(0.1))
-        .cornerRadius(8)
-    }
-}
+//struct ThreadRow: View {
+//    let thread: Thread
+//    let currentUserEmail: String?
+//
+//    var body: some View {
+//        VStack(alignment: .leading, spacing: 4) {
+//            Text(thread.title)
+//                .font(.headline)
+//            Text("Created by: \(thread.creatorId)")
+//                .font(.caption)
+//            Text(thread.formattedDate)
+//                .font(.caption2)
+//                .foregroundColor(.secondary)
+//        }
+//        .frame(maxWidth: .infinity, alignment: .leading)
+//        .padding()
+//        .background(Color.secondary.opacity(0.1))
+//        .cornerRadius(8)
+//    }
+//}
 
 struct ActivityViewController: UIViewControllerRepresentable {
     var activityItems: [Any]
     var applicationActivities: [UIActivity]? = nil
-    
+
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let activityViewController = UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
         return activityViewController
     }
-    
+
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
         // Update the view controller if needed.  In this case, nothing to update.
     }
