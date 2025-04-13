@@ -11,6 +11,7 @@ import CachedAsyncImage
 struct ProductDetailView: View {
 
     var product: Product
+    @Binding var deepLinkThreadId: String?
 
     @Environment(CartManager.self) var cartManager
     @Environment(ProductManager.self) var productManager
@@ -26,8 +27,9 @@ struct ProductDetailView: View {
     @State private var commentManager: CommentManager
     @State private var newThreadTitle = ""
 
-    init(product: Product) {
+    init(product: Product, deepLinkThreadId: Binding<String?>) {
         self.product = product
+        self._deepLinkThreadId = deepLinkThreadId
         self.commentManager = CommentManager(productID: product.id ?? "")
     }
 
@@ -123,6 +125,13 @@ struct ProductDetailView: View {
                 .padding(.top)
             }
             .padding()
+        }
+        .task {
+            // If there's a deep-linked thread ID, show it
+            if let threadId = deepLinkThreadId {
+                selectedThread = commentManager.loadThread(by: threadId)
+                deepLinkThreadId = nil
+            }
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -229,7 +238,7 @@ struct ActivityViewController: UIViewControllerRepresentable {
 
 #Preview {
     NavigationStack {
-        ProductDetailView(product: .sample)
+        ProductDetailView(product: .sample, deepLinkThreadId: .constant(nil))
             .environment(CartManager.shared)
             .environment(UserManager.shared)
             .environment(ProductManager())

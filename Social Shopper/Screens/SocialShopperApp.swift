@@ -15,13 +15,16 @@ import FirebaseAuth
 struct SocialShopperApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
-    @State private var deepLinkDestination: DeepLinkDestination?
     @State private var productManager: ProductManager
+    @State private var cartManager: CartManager
+    @State private var userManager: UserManager
+
+    @State private var deepLinkDestination: DeepLinkDestination?
     @State private var deepLinkProductId: String?
+    @State private var deepLinkThreadId: String?
+
     @State private var showAddProductView: Bool = false
     @State private var showError = false
-    @State var cartManager: CartManager
-    @State var userManager: UserManager
 
     init() {
         FirebaseSetup.configure()
@@ -33,20 +36,25 @@ struct SocialShopperApp: App {
     var body: some Scene {
         WindowGroup {
             if userManager.isSignedIn {
-                MainView(deepLinkProductId: $deepLinkProductId)
+                MainView(deepLinkProductId: $deepLinkProductId, deepLinkThreadId: $deepLinkThreadId)
                     .environment(productManager)
                     .environment(cartManager)
                     .environment(userManager)
                     .onOpenURL { url in
-                        if let destination = DeepLink.handleURL(url),
-                           case .product(let id) = destination {
-                            deepLinkProductId = id
+                        if let destination = DeepLink.handleURL(url) {
+                            switch destination {
+                            case .product(let id):
+                                deepLinkProductId = id
+                            case .thread(let productId, let threadId):
+                                deepLinkProductId = productId
+                                deepLinkThreadId = threadId
+                            }
                         }
                     }
                     .alert("Error", isPresented: $showError) {
                         Button("OK", role: .cancel) { }
                     } message: {
-                        Text("Failed to load the product")
+                        Text("Failed to load content")
                     }
             } else {
                 LoginView()

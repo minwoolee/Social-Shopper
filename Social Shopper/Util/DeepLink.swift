@@ -29,13 +29,13 @@ enum DeepLink {
         
         let pathComponents = components.path.split(separator: "/")
         
-        if pathComponents.count >= 2 && pathComponents[1] == "product" {
-            if pathComponents.count >= 4 && pathComponents[3] == "thread" {
-                let productId = String(pathComponents[2])
-                let threadId = String(pathComponents[4])
+        if pathComponents.count >= 2 && pathComponents[0] == "product" {
+            if pathComponents.count >= 4 && pathComponents[2] == "thread" {
+                let productId = String(pathComponents[1])
+                let threadId = String(pathComponents[3])
                 return .thread(productId: productId, threadId: threadId)
             }
-            return .product(id: String(pathComponents[2]))
+            return .product(id: String(pathComponents[1]))
         }
         
         return nil

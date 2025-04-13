@@ -12,6 +12,7 @@ struct ProductListView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     @Binding var deepLinkProductId: String?
+    @Binding var deepLinkThreadId: String?
     @Binding var navigationPath: NavigationPath
 
     @State private var searchText = ""
@@ -54,7 +55,10 @@ struct ProductListView: View {
                 productManager.loadProducts()
             }
             .navigationDestination(for: Product.self) { product in
-                ProductDetailView(product: product)
+                ProductDetailView(
+                    product: product,
+                    deepLinkThreadId: $deepLinkThreadId
+                )
             }
             .toolbar {
                 Button(action: {
@@ -146,6 +150,7 @@ struct ProductListView: View {
 #Preview {
     ProductListView(
         deepLinkProductId: .constant(nil),
+        deepLinkThreadId: .constant(nil),
         navigationPath: .constant(NavigationPath())
     )
         .environment(ProductManager())

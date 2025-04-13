@@ -10,15 +10,18 @@ import FirebaseFirestore
 
 @Observable
 class CommentManager {
+
+
     var threads: [Thread] = []
     var comments: [String: [Comment]] = [:] // threadId: [Comments]
     var isLoading = false
     var error: Error?
 
-    private var db = Firestore.firestore()
-    private var productID: String
-    private var threadListeners: [String: ListenerRegistration] = [:]
-    private var threadsListener: ListenerRegistration?
+    @ObservationIgnored var allThreads: [Thread] = []
+    @ObservationIgnored private var db = Firestore.firestore()
+    @ObservationIgnored private var productID: String
+    @ObservationIgnored private var threadListeners: [String: ListenerRegistration] = [:]
+    @ObservationIgnored private var threadsListener: ListenerRegistration?
 
     init(productID: String) {
         self.productID = productID
@@ -31,7 +34,6 @@ class CommentManager {
 
         threadsListener?.remove()
 
-        // Query threads where user is either creator or participant
         let threadsRef = db.collection("products").document(productID).collection("threads")
         threadsListener = threadsRef.addSnapshotListener { [weak self] snapshot, error in
             guard let self = self else { return }
@@ -42,23 +44,22 @@ class CommentManager {
             }
 
             do {
-                let allThreads = try snapshot?.documents.compactMap {
+                allThreads = try snapshot?.documents.compactMap {
                     try $0.data(as: Thread.self)
                 } ?? []
 
-                // Filter threads to only show where user is creator or participant
                 if let currentUserEmail = UserManager.shared.user?.email {
                     self.threads = allThreads.filter { thread in
                         thread.creatorId == currentUserEmail ||
                         thread.participants.contains(currentUserEmail)
                     }
+
+                    // Load comments for each accessible thread
+                    for thread in self.threads {
+                        self.loadComments(for: thread.id ?? "")
+                    }
                 } else {
                     self.threads = []
-                }
-
-                // Load comments for each accessible thread
-                for thread in self.threads {
-                    self.loadComments(for: thread.id ?? "")
                 }
             } catch {
                 self.error = error
@@ -66,6 +67,21 @@ class CommentManager {
 
             self.isLoading = false
         }
+    }
+
+    func loadThread(by threadId: String) -> Thread? {
+        guard let thread = allThreads.first(where: { $0.id == threadId }) else { return nil }
+        if !threads.contains(where: { $0.id == thread.id }) {
+            threads.append(thread)
+        }
+        Task {
+            do {
+                try await addParticipant(UserManager.shared.user!.uid, to: threadId)
+            } catch {
+                self.error = error
+            }
+        }
+        return thread
     }
 
     func loadComments(for threadId: String) {

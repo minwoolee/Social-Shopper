@@ -9,17 +9,29 @@ import SwiftUI
 
 struct MainView: View {
     @Binding var deepLinkProductId: String?
-    @State private var selectedTab = 0
-    @State private var navigationPath = NavigationPath()
+    @Binding var deepLinkThreadId: String?
+
     @Environment(ProductManager.self) private var productManager
 
+    @State private var selectedTab = 0
+    @State private var navigationPath = NavigationPath()
+
     var body: some View {
+
         TabView(selection: $selectedTab) {
 
             ProductListView(
                 deepLinkProductId: $deepLinkProductId,
+                deepLinkThreadId: $deepLinkThreadId,
                 navigationPath: $navigationPath
             )
+            .task {
+                if let id = deepLinkProductId {
+                    let product = await productManager.getProduct(by: id)
+                    navigationPath.append(product)
+                    deepLinkProductId = nil
+                }
+            }
             .tabItem {
                 Label("Products", systemImage: "list.bullet")
             }
