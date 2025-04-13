@@ -10,6 +10,10 @@ struct ProductListView: View {
     @Environment(ProductManager.self) var productManager
     @Environment(UserManager.self) var userManager
     @Environment(\.scenePhase) private var scenePhase
+
+    @Binding var deepLinkProductId: String?
+    @Binding var navigationPath: NavigationPath
+
     @State private var searchText = ""
     @State private var selectedCategory: Category?
     @State private var shouldShowLogoutSheet: Bool = false
@@ -17,7 +21,7 @@ struct ProductListView: View {
     @State private var shouldShowError: Bool = false
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             VStack {
                 // Category Filter
                 categoryFilterView
@@ -79,6 +83,14 @@ struct ProductListView: View {
                     .cancel()
                 ])
             }
+            .onChange(of: deepLinkProductId) { _, _ in
+                if let id = deepLinkProductId {
+                    if productManager.products.contains(where: { $0.id == id }) {
+                        navigationPath.append(productManager.getProduct(by: id)!)
+                    }
+                    deepLinkProductId = nil
+                }
+            }
             .errorAlert(error: productManager.error) {
                 productManager.error = nil
             }
@@ -131,7 +143,10 @@ struct ProductListView: View {
 }
 
 #Preview {
-    ProductListView()
+    ProductListView(
+        deepLinkProductId: .constant(nil),
+        navigationPath: .constant(NavigationPath())
+    )
         .environment(ProductManager())
         .environment(UserManager.shared)
 }

@@ -56,8 +56,6 @@ struct SocialShopperApp: App {
     }
 }
 
-
-
 final class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         return true
@@ -75,49 +73,5 @@ class FirebaseSetup {
         let settings = db.settings
         settings.cacheSettings = PersistentCacheSettings()
         db.settings = settings
-    }
-}
-
-// Add LoadingProductView to handle async product loading
-struct LoadingProductView<Content: View>: View {
-    let productId: String
-    let content: (Product) -> Content
-
-    @Environment(ProductManager.self) private var productManager
-    @Environment(\.dismiss) private var dismiss
-    @State private var product: Product?
-    @State private var error: Error?
-
-    init(productId: String, @ViewBuilder content: @escaping (Product) -> Content) {
-        self.productId = productId
-        self.content = content
-    }
-
-    var body: some View {
-        Group {
-            if let product {
-                content(product)
-            } else {
-                ProgressView("Loading product...")
-            }
-        }
-        .task {
-            do {
-                product = try await productManager.loadProduct(by: productId)
-            } catch {
-                self.error = error
-                dismiss()
-            }
-        }
-    }
-}
-
-// Make DeepLinkDestination conform to Identifiable
-extension DeepLinkDestination: Identifiable {
-    var id: String {
-        switch self {
-        case .product(let id):
-            return "product_\(id)"
-        }
     }
 }

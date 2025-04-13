@@ -33,3 +33,12 @@ enum DeepLink {
 enum DeepLinkDestination: Equatable {
     case product(id: String)
 }
+
+extension DeepLinkDestination: Identifiable {
+    var id: String {
+        switch self {
+        case .product(let id):
+            return "product_\(id)"
+        }
+    }
+}

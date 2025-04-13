@@ -15,7 +15,8 @@ struct MainView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            ProductNavigationView(
+
+            ProductListView(
                 deepLinkProductId: $deepLinkProductId,
                 navigationPath: $navigationPath
             )
@@ -34,29 +35,6 @@ struct MainView: View {
             if newValue != nil {
                 selectedTab = 0
             }
-        }
-    }
-}
-
-struct ProductNavigationView: View {
-    @Binding var deepLinkProductId: String?
-    @Binding var navigationPath: NavigationPath
-    @Environment(ProductManager.self) private var productManager
-
-    var body: some View {
-        NavigationStack(path: $navigationPath) {
-            ProductListView()
-                .navigationDestination(for: Product.self) { product in
-                    ProductDetailView(product: product)
-                }
-                .onChange(of: deepLinkProductId) { _, _ in
-                    if let id = deepLinkProductId {
-                        if productManager.products.contains(where: { $0.id == id }) {
-                            navigationPath.append(productManager.getProduct(by: id)!)
-                        }
-                        deepLinkProductId = nil
-                    }
-                }
         }
     }
 }
