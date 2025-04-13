@@ -34,7 +34,7 @@ struct CommentsView: View {
     }
 
     private func postComment() async {
-        guard let userId = userManager.user?.email,
+        guard let email = userManager.user?.email,
               let threadId = thread.id,
               !commentText.isEmpty else { return }
 
@@ -44,7 +44,7 @@ struct CommentsView: View {
         do {
             try await commentManager.addComment(
                 text: commentText.trimmingCharacters(in: .whitespacesAndNewlines),
-                userId: userId,
+                email: email,
                 threadId: threadId
             )
             commentText = ""
@@ -118,7 +118,7 @@ private struct CommentsList: View {
                     ContentUnavailableView("No Comments", systemImage: "quote.bubble.fill.rtl")
                 } else {
                     ForEach(comments) { comment in
-                        CommentRow(comment: comment, isCurrentUser: comment.userId == userManager.user?.email)
+                        CommentRow(comment: comment, isCurrentUser: comment.email == userManager.user?.email)
                             .id(comment.id)
                     }
                     Color.clear
@@ -172,7 +172,7 @@ struct ThreadRow: View {
     let currentUserEmail: String?
 
     private var isCreator: Bool {
-        currentUserEmail == thread.creatorId
+        currentUserEmail == thread.creatorEmail
     }
 
     var body: some View {

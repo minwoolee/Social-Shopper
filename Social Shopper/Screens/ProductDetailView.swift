@@ -194,10 +194,10 @@ struct ProductDetailView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Create") {
                         Task {
-                            guard let userId = userManager.user?.email else { return }
+                            guard let email = userManager.user?.email else { return }
                             _ = try? await commentManager.createThread(
                                 title: newThreadTitle,
-                                userId: userId
+                                email: email
                             )
                             showNewThreadSheet = false
                             newThreadTitle = ""

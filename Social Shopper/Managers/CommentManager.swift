@@ -50,7 +50,7 @@ class CommentManager {
 
                 if let currentUserEmail = UserManager.shared.user?.email {
                     self.threads = allThreads.filter { thread in
-                        thread.creatorId == currentUserEmail ||
+                        thread.creatorEmail == currentUserEmail ||
                         thread.participants.contains(currentUserEmail)
                     }
 
@@ -70,13 +70,15 @@ class CommentManager {
     }
 
     func loadThread(by threadId: String) -> Thread? {
-        guard let thread = allThreads.first(where: { $0.id == threadId }) else { return nil }
+        guard let thread = allThreads.first(where: { $0.id == threadId }),
+              let email = UserManager.shared.user?.email
+        else { return nil }
         if !threads.contains(where: { $0.id == thread.id }) {
             threads.append(thread)
         }
         Task {
             do {
-                try await addParticipant(UserManager.shared.user!.uid, to: threadId)
+                try await addParticipant(email, to: threadId)
             } catch {
                 self.error = error
             }
@@ -111,13 +113,13 @@ class CommentManager {
         threadListeners[threadId] = listener
     }
 
-    func createThread(title: String, userId: String) async throws -> Thread {
+    func createThread(title: String, email: String) async throws -> Thread {
         let thread = Thread(
             productId: productID,
-            creatorId: userId,
+            creatorEmail: email,
             title: title,
             createdAt: Date(),
-            participants: [userId]
+            participants: [email]
         )
 
         let ref = try db.collection("products").document(productID)
@@ -127,10 +129,10 @@ class CommentManager {
         return try await ref.getDocument(as: Thread.self)
     }
 
-    func addComment(text: String, userId: String, threadId: String) async throws {
+    func addComment(text: String, email: String, threadId: String) async throws {
         let comment = Comment(
             threadId: threadId,
-            userId: userId,
+            email: email,
             text: text,
             timestamp: Date()
         )
@@ -141,11 +143,11 @@ class CommentManager {
             .addDocument(from: comment)
     }
 
-    func addParticipant(_ userId: String, to threadId: String) async throws {
+    func addParticipant(_ email: String, to threadId: String) async throws {
         try await db.collection("products").document(productID)
             .collection("threads").document(threadId)
             .updateData([
-                "participants": FieldValue.arrayUnion([userId])
+                "participants": FieldValue.arrayUnion([email])
             ])
     }
 

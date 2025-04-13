@@ -12,7 +12,7 @@ struct CommentRow: View {
             }
             
             VStack(alignment: isCurrentUser ? .trailing : .leading, spacing: 4) {
-                Text(comment.userId)
+                Text(comment.email)
                     .font(.caption)
                     .foregroundColor(.gray)
                 
@@ -45,7 +45,7 @@ struct CommentRow: View {
             comment: Comment(
                 id: "1",
                 threadId: "thread1",
-                userId: "user1",
+                email: "user1@gmail.com",
                 text: "This is my message",
                 timestamp: Date()
             ),
@@ -56,7 +56,7 @@ struct CommentRow: View {
             comment: Comment(
                 id: "2",
                 threadId: "thread2",
-                userId: "user2",
+                email: "user2@gmail.com",
                 text: "This is someone else's message",
                 timestamp: Date()
             ),

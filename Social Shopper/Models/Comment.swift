@@ -11,7 +11,7 @@ import FirebaseFirestore
 struct Comment: Identifiable, Codable {
     @DocumentID var id: String?
     let threadId: String // Add thread reference
-    let userId: String
+    let email: String
     let text: String
     let timestamp: Date
     
@@ -23,11 +23,11 @@ struct Comment: Identifiable, Codable {
     }
     
     // Custom initializer
-    init(id: String? = nil, threadId: String, userId: String, text: String, timestamp: Date) {
+    init(id: String? = nil, threadId: String, email: String, text: String, timestamp: Date) {
         self.id = id
         self.threadId = threadId
         self.text = text
-        self.userId = userId
+        self.email = email
         self.timestamp = timestamp
     }
 }
