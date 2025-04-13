@@ -15,29 +15,33 @@ struct ProductDetailView: View {
     @Environment(UserManager.self) var userManager
     @State private var quantity = 1
     @State private var showShareSheet = false
-    @State private var showComments = false
+    @State private var showNewThreadSheet = false
+    @State private var selectedThread: Thread?
     @State private var paymentSuccess = false
     @State private var isAddingToCart = false
     @State private var validationError: AppError?
-
+    @State private var commentManager: CommentManager
+    @State private var newThreadTitle = ""
+    
     init(product: Product) {
         self.product = product
+        self.commentManager = CommentManager(productID: product.id ?? "")
     }
-
+    
     private var shareItems: [Any] {
         var items: [Any] = [
             "Check out \(product.name) - \(product.formattedPrice)",
             URL(string: product.imageUrl)!
         ]
-
+        
         if let productId = product.id,
            let deepLink = DeepLink.productURL(id: productId) {
             items.append(deepLink)
         }
-
+        
         return items
     }
-
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
@@ -65,24 +69,24 @@ struct ProductDetailView: View {
                         EmptyView()
                     }
                 }
-
+                
                 Text(product.name)
                     .font(.title)
                     .fontWeight(.bold)
                 Text(product.description)
                     .font(.body)
                     .foregroundColor(.gray)
-
+                
                 Text("Price: \(product.formattedPrice)")
                     .font(.headline)
                     .fontWeight(.semibold)
-
+                
                 HStack {
                     Text("Quantity:")
                         .font(.headline)
                     Stepper("\(quantity)", value: $quantity, in: 1...10)
                 }
-
+                
                 Button(action: {
                     Task {
                         await addToCart()
@@ -93,17 +97,38 @@ struct ProductDetailView: View {
                 }
                 .primaryButton(isLoading: isAddingToCart)
                 .disabled(isAddingToCart)
-
-                Button(action: {
-                    showComments = true
-                }) {
+                
+                // Threads Section
+                VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Image(systemName: "bubble.left")
-                        Text("View Comments")
+                        Text("Discussion Threads")
+                            .font(.headline)
+                        
+                        Spacer()
+                        
+                        Button(action: {
+                            showNewThreadSheet = true
+                        }) {
+                            Label("New Thread", systemImage: "plus.bubble")
+                        }
+                        .disabled(userManager.user == nil)
                     }
-                    .frame(maxWidth: .infinity)
+                    
+                    if commentManager.isLoading {
+                        ProgressView()
+                    } else if commentManager.threads.isEmpty {
+                        Text("No threads yet")
+                            .foregroundColor(.secondary)
+                    } else {
+                        ForEach(commentManager.threads) { thread in
+                            ThreadRow(thread: thread)
+                                .onTapGesture {
+                                    selectedThread = thread
+                                }
+                        }
+                    }
                 }
-                .secondaryButton()
+                .padding(.top)
             }
             .padding()
         }
@@ -119,8 +144,40 @@ struct ProductDetailView: View {
         .sheet(isPresented: $showShareSheet) {
             ActivityViewController(activityItems: shareItems)
         }
-        .sheet(isPresented: $showComments) {
-            CommentsView(product: product)
+        .sheet(item: $selectedThread) { thread in
+            CommentsView(thread: thread, commentManager: commentManager)
+        }
+        .sheet(isPresented: $showNewThreadSheet) {
+            NavigationStack {
+                Form {
+                    Section {
+                        TextField("Thread Title", text: $newThreadTitle)
+                    }
+                }
+                .navigationTitle("New Thread")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            showNewThreadSheet = false
+                        }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Create") {
+                            Task {
+                                guard let userId = userManager.user?.email else { return }
+                                try? await commentManager.createThread(
+                                    title: newThreadTitle,
+                                    userId: userId
+                                )
+                                showNewThreadSheet = false
+                                newThreadTitle = ""
+                            }
+                        }
+                        .disabled(newThreadTitle.isEmpty)
+                    }
+                }
+            }
         }
         .alert("Success", isPresented: $paymentSuccess) {
             Button("OK", role: .cancel) { }
@@ -132,11 +189,11 @@ struct ProductDetailView: View {
             cartManager.error = nil
         }
     }
-
+    
     private func addToCart() async {
         isAddingToCart = true
         defer { isAddingToCart = false }
-
+        
         do {
             try await cartManager.addItem(product: product, quantity: quantity)
             paymentSuccess = true
@@ -146,15 +203,35 @@ struct ProductDetailView: View {
     }
 }
 
+struct ThreadRow: View {
+    let thread: Thread
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(thread.title)
+                .font(.headline)
+            Text("Created by: \(thread.creatorId)")
+                .font(.caption)
+            Text(thread.formattedDate)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color.secondary.opacity(0.1))
+        .cornerRadius(8)
+    }
+}
+
 struct ActivityViewController: UIViewControllerRepresentable {
     var activityItems: [Any]
     var applicationActivities: [UIActivity]? = nil
-
+    
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let activityViewController = UIActivityViewController(activityItems: activityItems, applicationActivities: applicationActivities)
         return activityViewController
     }
-
+    
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
         // Update the view controller if needed.  In this case, nothing to update.
     }

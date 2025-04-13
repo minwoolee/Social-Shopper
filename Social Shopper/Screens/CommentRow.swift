@@ -44,8 +44,9 @@ struct CommentRow: View {
         CommentRow(
             comment: Comment(
                 id: "1",
-                text: "This is my message",
+                threadId: "thread1",
                 userId: "user1",
+                text: "This is my message",
                 timestamp: Date()
             ),
             isCurrentUser: true
@@ -54,8 +55,9 @@ struct CommentRow: View {
         CommentRow(
             comment: Comment(
                 id: "2",
-                text: "This is someone else's message",
+                threadId: "thread2",
                 userId: "user2",
+                text: "This is someone else's message",
                 timestamp: Date()
             ),
             isCurrentUser: false

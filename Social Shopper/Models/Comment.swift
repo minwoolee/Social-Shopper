@@ -8,30 +8,26 @@
 import Foundation
 import FirebaseFirestore
 
-struct Comment: Identifiable, Codable, Equatable {
+struct Comment: Identifiable, Codable {
     @DocumentID var id: String?
-    var text: String
-    var userId: String  //  Consider storing a user ID, not the whole user object.
-    var timestamp: Date
-
-    var relativeTeimstamp: String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .abbreviated
-        return formatter.localizedString(for: timestamp, relativeTo: .now)
+    let threadId: String // Add thread reference
+    let userId: String
+    let text: String
+    let timestamp: Date
+    
+    var formattedDate: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter.string(from: timestamp)
     }
-
+    
     // Custom initializer
-    init(id: String? = nil, text: String, userId: String, timestamp: Date) {
+    init(id: String? = nil, threadId: String, userId: String, text: String, timestamp: Date) {
         self.id = id
+        self.threadId = threadId
         self.text = text
         self.userId = userId
         self.timestamp = timestamp
-    }
-
-    static func == (lhs: Comment, rhs: Comment) -> Bool {
-        lhs.id == rhs.id &&
-        lhs.text == rhs.text &&
-        lhs.userId == rhs.userId &&
-        lhs.timestamp == rhs.timestamp
     }
 }
