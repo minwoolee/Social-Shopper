@@ -77,21 +77,30 @@ class ProductManager {
     }
 
     // Get a single product by ID
-    func getProduct(by id: String) -> Product? {
-        products.first { $0.id == id }
+    func getProduct(by id: String) async -> Product? {
+        // First check local cache
+        if let product = products.first(where: { $0.id == id }) {
+            return product
+        }
+
+        // If not found locally, load from Firestore
+        if let product = await loadProduct(by: id) {
+            products.append(product)
+            return product
+        }
+        return nil
     }
 
-    // ADD: New method to fetch a single product
-    func loadProduct(by id: String) async throws -> Product {
+    // New method to fetch a single product from DB
+    private func loadProduct(by id: String) async -> Product? {
         do {
             let document = try await db.collection("products").document(id).getDocument()
             guard let product = try? document.data(as: Product.self) else {
-                throw AppError.databaseError("Product not found")
+                return nil
             }
             return product
         } catch {
-            self.error = .databaseError("Failed to load product: \(error.localizedDescription)")
-            throw self.error ?? .unknownError("Failed to load product")
+            return nil
         }
     }
 

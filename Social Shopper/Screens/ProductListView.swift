@@ -84,11 +84,12 @@ struct ProductListView: View {
                 ])
             }
             .onChange(of: deepLinkProductId) { _, _ in
-                if let id = deepLinkProductId {
-                    if productManager.products.contains(where: { $0.id == id }) {
-                        navigationPath.append(productManager.getProduct(by: id)!)
+                Task {
+                    if let id = deepLinkProductId,
+                       let product = await productManager.getProduct(by: id) {
+                        navigationPath.append(product)
+                        deepLinkProductId = nil
                     }
-                    deepLinkProductId = nil
                 }
             }
             .errorAlert(error: productManager.error) {
