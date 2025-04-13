@@ -9,10 +9,13 @@ import SwiftUI
 import CachedAsyncImage
 
 struct ProductDetailView: View {
+
     var product: Product
+
     @Environment(CartManager.self) var cartManager
     @Environment(ProductManager.self) var productManager
     @Environment(UserManager.self) var userManager
+
     @State private var quantity = 1
     @State private var showShareSheet = false
     @State private var showNewThreadSheet = false
@@ -26,20 +29,6 @@ struct ProductDetailView: View {
     init(product: Product) {
         self.product = product
         self.commentManager = CommentManager(productID: product.id ?? "")
-    }
-
-    private var shareItems: [Any] {
-        var items: [Any] = [
-            "Check out \(product.name) - \(product.formattedPrice)",
-            URL(string: product.imageUrl)!
-        ]
-
-        if let productId = product.id,
-           let deepLink = DeepLink.productURL(id: productId) {
-            items.append(deepLink)
-        }
-
-        return items
     }
 
     var body: some View {
@@ -151,36 +140,7 @@ struct ProductDetailView: View {
             CommentsView(thread: thread, commentManager: commentManager)
         }
         .sheet(isPresented: $showNewThreadSheet) {
-            NavigationStack {
-                Form {
-                    Section {
-                        TextField("Thread Title", text: $newThreadTitle)
-                    }
-                }
-                .navigationTitle("New Thread")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            showNewThreadSheet = false
-                        }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Create") {
-                            Task {
-                                guard let userId = userManager.user?.email else { return }
-                                try? await commentManager.createThread(
-                                    title: newThreadTitle,
-                                    userId: userId
-                                )
-                                showNewThreadSheet = false
-                                newThreadTitle = ""
-                            }
-                        }
-                        .disabled(newThreadTitle.isEmpty)
-                    }
-                }
-            }
+            newThreadForm()
         }
         .alert("Success", isPresented: $paymentSuccess) {
             Button("OK", role: .cancel) { }
@@ -190,6 +150,53 @@ struct ProductDetailView: View {
         .errorAlert(error: validationError ?? cartManager.error) {
             validationError = nil
             cartManager.error = nil
+        }
+    }
+
+    private var shareItems: [Any] {
+        var items: [Any] = [
+            "Check out \(product.name) - \(product.formattedPrice)",
+            URL(string: product.imageUrl)!
+        ]
+
+        if let productId = product.id,
+           let deepLink = DeepLink.productURL(id: productId) {
+            items.append(deepLink)
+        }
+
+        return items
+    }
+
+    fileprivate func newThreadForm() -> NavigationStack<NavigationPath, some View> {
+        return NavigationStack {
+            Form {
+                Section {
+                    TextField("Thread Title", text: $newThreadTitle)
+                }
+            }
+            .navigationTitle("New Thread")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        showNewThreadSheet = false
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Create") {
+                        Task {
+                            guard let userId = userManager.user?.email else { return }
+                            _ = try? await commentManager.createThread(
+                                title: newThreadTitle,
+                                userId: userId
+                            )
+                            showNewThreadSheet = false
+                            newThreadTitle = ""
+                        }
+                    }
+                    .disabled(newThreadTitle.isEmpty)
+                }
+            }
         }
     }
 
@@ -205,27 +212,6 @@ struct ProductDetailView: View {
         }
     }
 }
-
-//struct ThreadRow: View {
-//    let thread: Thread
-//    let currentUserEmail: String?
-//
-//    var body: some View {
-//        VStack(alignment: .leading, spacing: 4) {
-//            Text(thread.title)
-//                .font(.headline)
-//            Text("Created by: \(thread.creatorId)")
-//                .font(.caption)
-//            Text(thread.formattedDate)
-//                .font(.caption2)
-//                .foregroundColor(.secondary)
-//        }
-//        .frame(maxWidth: .infinity, alignment: .leading)
-//        .padding()
-//        .background(Color.secondary.opacity(0.1))
-//        .cornerRadius(8)
-//    }
-//}
 
 struct ActivityViewController: UIViewControllerRepresentable {
     var activityItems: [Any]

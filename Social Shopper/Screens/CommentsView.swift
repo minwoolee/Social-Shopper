@@ -1,13 +1,16 @@
 import SwiftUI
 
 struct CommentsView: View {
+
     let thread: Thread
+
     @Environment(UserManager.self) private var userManager
+    @Environment(\.dismiss) private var dismiss
+
     @State private var commentText = ""
     @State private var isPostingComment = false
     @State private var showShareSheet = false
-    @Environment(\.dismiss) private var dismiss
-    @State var commentManager: CommentManager
+    @State private var commentManager: CommentManager
 
     init(thread: Thread, commentManager: CommentManager) {
         self.thread = thread
@@ -112,9 +115,7 @@ private struct CommentsList: View {
         ScrollViewReader { proxy in
             List {
                 if comments.isEmpty && thread.id != nil {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding()
+                    ContentUnavailableView("No Comments", systemImage: "quote.bubble.fill.rtl")
                 } else {
                     ForEach(comments) { comment in
                         CommentRow(comment: comment, isCurrentUser: comment.userId == userManager.user?.email)
