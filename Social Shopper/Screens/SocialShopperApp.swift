@@ -35,7 +35,7 @@ struct SocialShopperApp: App {
     var body: some Scene {
         WindowGroup {
             if userManager.isSignedIn {
-                MainView(deepLinkProductId: $deepLinkProductId, deepLinkThreadId: $deepLinkThreadId)
+                MainTabView(deepLinkProductId: $deepLinkProductId, deepLinkThreadId: $deepLinkThreadId)
                     .environment(productManager)
                     .environment(cartManager)
                     .environment(userManager)

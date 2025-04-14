@@ -7,7 +7,7 @@
 import SwiftUI
 import CachedAsyncImage
 
-struct ProductRow: View {
+struct ProductRowView: View {
     var product: Product
 
     var body: some View {
@@ -54,5 +54,5 @@ struct ProductRow: View {
 }
 
 #Preview {
-    ProductRow(product: .sample)
+    ProductRowView(product: .sample)
 }

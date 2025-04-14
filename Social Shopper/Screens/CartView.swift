@@ -1,12 +1,12 @@
+//
+//  CartView.swift
+//  Social Shopper
+//
+//  Created by Min Woo Lee on 4/1/25.
+//
 import SwiftUI
 import FirebaseCore
 import FirebaseFirestore
-import FirebaseStorage
-import FirebaseAnalytics
-import UIKit
-import Combine
-import CoreGraphics
-import Observation
 
 struct CartView: View {
     @Environment(CartManager.self) var cartManager
@@ -32,7 +32,7 @@ struct CartView: View {
                 } else {
                     List {
                         ForEach(cartManager.items) { item in
-                            CartItemRow(item: item)
+                            CartItemRowView(item: item)
                         }
                         
                         Section {

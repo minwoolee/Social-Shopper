@@ -11,6 +11,7 @@ import CachedAsyncImage
 struct ProductDetailView: View {
 
     var product: Product
+
     @Binding var deepLinkThreadId: String?
 
     @Environment(CartManager.self) var cartManager
@@ -21,7 +22,7 @@ struct ProductDetailView: View {
     @State private var showShareSheet = false
     @State private var showNewThreadSheet = false
     @State private var selectedThread: Thread?
-    @State private var paymentSuccess = false
+    @State private var cartAddSuccess = false
     @State private var isAddingToCart = false
     @State private var validationError: AppError?
     @State private var commentManager: CommentManager
@@ -89,40 +90,7 @@ struct ProductDetailView: View {
                 .primaryButton(isLoading: isAddingToCart)
                 .disabled(isAddingToCart)
 
-                // Threads Section
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Text("Discussion Threads")
-                            .font(.headline)
-
-                        Spacer()
-
-                        Button(action: {
-                            showNewThreadSheet = true
-                        }) {
-                            Label("New Thread", systemImage: "plus.bubble")
-                        }
-                        .disabled(userManager.user == nil)
-                    }
-
-                    if userManager.user == nil {
-                        Text("Sign in to view and create discussion threads")
-                            .foregroundColor(.secondary)
-                    } else if commentManager.isLoading {
-                        ProgressView()
-                    } else if commentManager.threads.isEmpty {
-                        Text("No threads available. Create one to start discussing!")
-                            .foregroundColor(.secondary)
-                    } else {
-                        ForEach(commentManager.threads) { thread in
-                            ThreadRow(thread: thread, currentUserEmail: userManager.user?.email)
-                                .onTapGesture {
-                                    selectedThread = thread
-                                }
-                        }
-                    }
-                }
-                .padding(.top)
+                threadsView()
             }
             .padding()
         }
@@ -151,7 +119,7 @@ struct ProductDetailView: View {
         .sheet(isPresented: $showNewThreadSheet) {
             newThreadForm()
         }
-        .alert("Success", isPresented: $paymentSuccess) {
+        .alert("Success", isPresented: $cartAddSuccess) {
             Button("OK", role: .cancel) { }
         } message: {
             Text("\(product.name) added to cart!")
@@ -162,18 +130,40 @@ struct ProductDetailView: View {
         }
     }
 
-    private var shareItems: [Any] {
-        var items: [Any] = [
-            "Check out \(product.name) - \(product.formattedPrice)",
-            URL(string: product.imageUrl)!
-        ]
+    fileprivate func threadsView() -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Discussion Threads")
+                    .font(.headline)
 
-        if let productId = product.id,
-           let deepLink = DeepLink.productURL(id: productId) {
-            items.append(deepLink)
+                Spacer()
+
+                Button(action: {
+                    showNewThreadSheet = true
+                }) {
+                    Label("New Thread", systemImage: "plus.bubble")
+                }
+                .disabled(userManager.user == nil)
+            }
+
+            if userManager.user == nil {
+                Text("Sign in to view and create discussion threads")
+                    .foregroundColor(.secondary)
+            } else if commentManager.isLoading {
+                ProgressView()
+            } else if commentManager.threads.isEmpty {
+                Text("No threads available. Create one to start discussing!")
+                    .foregroundColor(.secondary)
+            } else {
+                ForEach(commentManager.threads) { thread in
+                    ThreadRow(thread: thread, currentUserEmail: userManager.user?.email)
+                        .onTapGesture {
+                            selectedThread = thread
+                        }
+                }
+            }
         }
-
-        return items
+        .padding(.top)
     }
 
     fileprivate func newThreadForm() -> NavigationStack<NavigationPath, some View> {
@@ -209,13 +199,27 @@ struct ProductDetailView: View {
         }
     }
 
+    private var shareItems: [Any] {
+        var items: [Any] = [
+            "Check out \(product.name) - \(product.formattedPrice)",
+            URL(string: product.imageUrl)!
+        ]
+
+        if let productId = product.id,
+           let deepLink = DeepLink.productURL(id: productId) {
+            items.append(deepLink)
+        }
+
+        return items
+    }
+
     private func addToCart() async {
         isAddingToCart = true
         defer { isAddingToCart = false }
 
         do {
             try await cartManager.addItem(product: product, quantity: quantity)
-            paymentSuccess = true
+            cartAddSuccess = true
         } catch {
             validationError = .validationError("Failed to add item to cart: \(error.localizedDescription)")
         }

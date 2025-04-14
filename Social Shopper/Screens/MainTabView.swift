@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct MainView: View {
+struct MainTabView: View {
     @Binding var deepLinkProductId: String?
     @Binding var deepLinkThreadId: String?
 

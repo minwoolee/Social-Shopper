@@ -34,7 +34,7 @@ struct ProductListView: View {
                 } else {
                     List(filteredProducts) { product in
                         NavigationLink(value: product) {
-                            ProductRow(product: product)
+                            ProductRowView(product: product)
                         }
                     }
                     .listStyle(PlainListStyle())
@@ -153,6 +153,6 @@ struct ProductListView: View {
         deepLinkThreadId: .constant(nil),
         navigationPath: .constant(NavigationPath())
     )
-        .environment(ProductManager())
-        .environment(UserManager.shared)
+    .environment(ProductManager())
+    .environment(UserManager.shared)
 }

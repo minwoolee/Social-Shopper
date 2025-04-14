@@ -118,7 +118,7 @@ private struct CommentsList: View {
                     ContentUnavailableView("No Comments", systemImage: "quote.bubble.fill.rtl")
                 } else {
                     ForEach(comments) { comment in
-                        CommentRow(comment: comment, isCurrentUser: comment.email == userManager.user?.email)
+                        CommentRowView(comment: comment, isCurrentUser: comment.email == userManager.user?.email)
                             .id(comment.id)
                     }
                     Color.clear
@@ -199,5 +199,48 @@ struct ThreadRow: View {
         .padding()
         .background(Color.secondary.opacity(0.1))
         .cornerRadius(8)
+    }
+}
+
+struct CommentsView_Previews: PreviewProvider {
+    static var previews: some View {
+        let sampleThreadId = "thread-123"
+        let sampleProduct = Product.sample
+        let sampleThread = Thread(
+            id: sampleThreadId,
+            productId: sampleProduct.id ?? "prod-sample",
+            creatorEmail: "creator@example.com",
+            title: "Sample Thread Title",
+            createdAt: Date(),
+            participants: ["creator@example.com", "user1@example.com"]
+        )
+
+        let sampleComment1 = Comment(
+            id: "comment-1",
+            threadId: sampleThreadId,
+            email: "user1@example.com",
+            text: "This is the first comment!",
+            timestamp: Calendar.current.date(byAdding: .minute, value: -10, to: Date())!
+        )
+        let sampleComment2 = Comment(
+            id: "comment-2",
+            threadId: sampleThreadId,
+            email: "creator@example.com",
+            text: "Replying to the first comment.",
+            timestamp: Calendar.current.date(byAdding: .minute, value: -5, to: Date())!
+        )
+        let sampleComment3 = Comment(
+            id: "comment-3",
+            threadId: sampleThreadId,
+            email: "user1@example.com",
+            text: "Another comment.",
+            timestamp: Date()
+        )
+
+        let commentManager = CommentManager(productID: sampleProduct.id!)
+        commentManager.comments[sampleThreadId] = [sampleComment1, sampleComment2, sampleComment3]
+
+        return CommentsView(thread: sampleThread, commentManager: commentManager)
+            .environment(UserManager.shared)
     }
 }

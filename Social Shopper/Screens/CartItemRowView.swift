@@ -7,7 +7,7 @@
 import SwiftUI
 import CachedAsyncImage
 
-struct CartItemRow: View {
+struct CartItemRowView: View {
     var item: CartItem
     @Environment(CartManager.self) var cartManager
 
@@ -57,6 +57,6 @@ struct CartItemRow: View {
 }
 
 #Preview {
-    CartItemRow(item: .sample)
+    CartItemRowView(item: .sample)
         .environment(CartManager.shared)
 }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct CommentRow: View {
+struct CommentRowView: View {
     let comment: Comment
     let isCurrentUser: Bool
     @State private var isAnimating = false
@@ -46,7 +46,7 @@ struct CommentRow: View {
 
 #Preview {
     VStack(alignment: .leading, spacing: 10) {
-        CommentRow(
+        CommentRowView(
             comment: Comment(
                 id: "1",
                 threadId: "thread1",
@@ -57,7 +57,7 @@ struct CommentRow: View {
             isCurrentUser: true
         )
 
-        CommentRow(
+        CommentRowView(
             comment: Comment(
                 id: "2",
                 threadId: "thread2",
@@ -67,7 +67,7 @@ struct CommentRow: View {
             ),
             isCurrentUser: false
         )
-        CommentRow(
+        CommentRowView(
             comment: Comment(
                 id: "3",
                 threadId: "thread2",
