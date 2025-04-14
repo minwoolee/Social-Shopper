@@ -13,7 +13,6 @@ import FirebaseAuth
 // Main App
 @main
 struct SocialShopperApp: App {
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     @State private var productManager: ProductManager
     @State private var cartManager: CartManager
@@ -64,14 +63,7 @@ struct SocialShopperApp: App {
     }
 }
 
-final class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        return true
-    }
-}
-
 // MARK: - Firebase Configuration
-// Don't forget to add GoogleService-Info.plist to your project.  This is a placeholder.
 class FirebaseSetup {
     static func configure() {
         FirebaseApp.configure() // Initialize Firebase
