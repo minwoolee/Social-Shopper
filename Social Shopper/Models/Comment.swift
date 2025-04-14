@@ -14,14 +14,13 @@ struct Comment: Identifiable, Codable {
     let email: String
     let text: String
     let timestamp: Date
-    
-    var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
-        return formatter.string(from: timestamp)
+
+    var relativeTimestamp: String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full // e.g., "5 minutes ago", "1 hour ago"
+        return formatter.localizedString(for: timestamp, relativeTo: Date())
     }
-    
+
     // Custom initializer
     init(id: String? = nil, threadId: String, email: String, text: String, timestamp: Date) {
         self.id = id
